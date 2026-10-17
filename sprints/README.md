@@ -29,8 +29,8 @@ The implementing agent **must** update the `End-of-Sprint Report` section and co
 
 | # | Name | Branch | Status |
 |---|---|---|---|
-| [0](./SPRINT-0.md) | Tauri Project Scaffolding | `feature/sprint-0-tauri-scaffold` | ⏳ Not Started |
-| [1](./SPRINT-1.md) | Core Search UI | `feature/sprint-1-search-ui` | ⏳ Not Started |
+| [0](./SPRINT-0.md) | Tauri Project Scaffolding | `feature/sprint-0-tauri-scaffold` | ✅ Complete |
+| [1](./SPRINT-1.md) | Core Search UI | `feature/sprint-1-search-ui` | ⏳ Next |
 | [2](./SPRINT-2.md) | Audio Playback & Player Bar | `feature/sprint-2-player-bar` | ⏳ Not Started |
 | [3](./SPRINT-3.md) | Queue, Library & Navigation | `feature/sprint-3-queue-library` | ⏳ Not Started |
 | [4](./SPRINT-4.md) | Polish, Settings & Auth UX | `feature/sprint-4-polish-settings` | ⏳ Not Started |

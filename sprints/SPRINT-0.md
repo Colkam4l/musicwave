@@ -4,7 +4,7 @@
 |---|---|
 | **Branch** | `feature/sprint-0-tauri-scaffold` |
 | **Depends On** | Nothing — this is the foundation sprint |
-| **Status** | ⏳ Not Started |
+| **Status** | ✅ Complete |
 | **Scope** | ~1 focused session |
 
 > **Related docs:** [CLAUDE.md](../CLAUDE.md) · [decisions.md](../decisions.md) · [SETUP.md](../SETUP.md) · [Sprint Index](./README.md)
@@ -69,16 +69,16 @@ musicwave/
 
 ### 2.2 Tasks
 
-- [ ] **T0-1:** Run `cargo tauri init` (or `npm create tauri-app`) to scaffold the Tauri v2 project around the existing repo
-- [ ] **T0-2:** Move existing Rust source from `src/` to `src-tauri/src/`
-- [ ] **T0-3:** Refactor `src-tauri/src/main.rs` into modules: `audio.rs`, `search.rs`, `stream.rs`, `commands.rs`
-- [ ] **T0-4:** Register at least one smoke-test Tauri command: `#[tauri::command] async fn ping() -> String`
-- [ ] **T0-5:** Initialize the Vite + React + TypeScript frontend in `src/`
-- [ ] **T0-6:** Verify `cargo tauri dev` launches a Tauri window displaying the React app
-- [ ] **T0-7:** Update `.gitignore` to exclude `node_modules/`, `dist/`, `src-tauri/target/`
-- [ ] **T0-8:** Update `CLAUDE.md` — replace Slint UI styling section with Tauri/React section
-- [ ] **T0-9:** Update `current-state.md` — new directory layout, new active deps, new commands
-- [ ] **T0-10:** Add ADR 3 to `decisions.md` documenting the Slint → Tauri pivot decision
+- [x] **T0-1:** Run `cargo tauri init` (or `npm create tauri-app`) to scaffold the Tauri v2 project around the existing repo
+- [x] **T0-2:** Move existing Rust source from `src/` to `src-tauri/src/`
+- [x] **T0-3:** Refactor `src-tauri/src/main.rs` into modules: `audio.rs`, `search.rs`, `stream.rs`, `commands.rs`
+- [x] **T0-4:** Register at least one smoke-test Tauri command: `#[tauri::command] async fn ping() -> String`
+- [x] **T0-5:** Initialize the Vite + React + TypeScript frontend in `src/`
+- [x] **T0-6:** Verify `cargo tauri dev` launches a Tauri window displaying the React app
+- [x] **T0-7:** Update `.gitignore` to exclude `node_modules/`, `dist/`, `src-tauri/target/`
+- [x] **T0-8:** Update `CLAUDE.md` — replace Slint UI styling section with Tauri/React section
+- [x] **T0-9:** Update `current-state.md` — new directory layout, new active deps, new commands
+- [x] **T0-10:** Add ADR 3 to `decisions.md` documenting the Slint → Tauri pivot decision
 
 ---
 
@@ -129,40 +129,56 @@ The React frontend must use:
 
 All of the following must be true before this sprint is merged to `main`:
 
-- [ ] `cargo tauri dev` runs without errors and opens a desktop window
-- [ ] The desktop window displays a React component (even if just "MusicWave is loading...")
-- [ ] `cargo clippy -- -D warnings` passes with zero warnings in `src-tauri/`
-- [ ] `cargo fmt --check` passes in `src-tauri/`
-- [ ] `node_modules/`, `dist/`, and build artifacts are excluded from git
-- [ ] `current-state.md` reflects the new directory structure
-- [ ] ADR 3 has been added to `decisions.md`
-- [ ] `CLAUDE.md` Section 2 (commands) updated with `npm run tauri dev` and frontend commands
-- [ ] End-of-Sprint Report section below is filled in
+- [x] `cargo tauri dev` runs without errors and opens a desktop window
+- [x] The desktop window displays a React component (even if just "MusicWave is loading...")
+- [x] `cargo clippy -- -D warnings` passes with zero warnings in `src-tauri/`
+- [x] `cargo fmt --check` passes in `src-tauri/`
+- [x] `node_modules/`, `dist/`, and build artifacts are excluded from git
+- [x] `current-state.md` reflects the new directory structure
+- [x] ADR 3 has been added to `decisions.md`
+- [x] `CLAUDE.md` Section 2 (commands) updated with `npm run tauri dev` and frontend commands
+- [x] End-of-Sprint Report section below is filled in
 
 ---
 
 ## 5. End-of-Sprint Report
 
-> ⚠️ **This section is filled in by the implementing agent after completion.**
-
 ### Date Completed
-_TBD_
+2026-10-17
 
 ### What Was Built
-_Describe each module/file created and its role._
+1. **Tauri v2 Workspace**:
+   - Converted root into a Cargo workspace containing `src-tauri`.
+   - Initialized Tauri v2 desktop shell with `tauri.conf.json`, `capabilities/default.json`, build scripts, and window configuration.
+2. **Modular Rust Audio & Search Engine** (`src-tauri/src/`):
+   - `search.rs`: Unauthenticated YouTube Music search via `ytmapi-rs`.
+   - `stream.rs`: Stream URL resolution via `youtui-vendored-rusty_ytdl` with `headers.json` and `po_token.txt` auth handling.
+   - `audio.rs`: `AudioPlayer` thread-safe struct managing `rodio` (v0.22) and `stream-download` for gapless HTTP buffering.
+   - `commands.rs`: Registered IPC handlers: `ping`, `search`, `play`, `pause`, `resume`, `stop`.
+   - `lib.rs` & `main.rs`: Tauri builder, state management (`SharedAudioPlayer`), plugin initialization (`tauri-plugin-opener`), and desktop entry point.
+3. **React 19 + TypeScript Frontend** (`src/`):
+   - Vite 8 bundler configuration with `base: "./"`, strict ports, and Tauri HMR integration.
+   - Global design system in `src/index.css` (custom properties, dark mode tokens, typography).
+   - `src/components/Placeholder.tsx` confirming window rendering and IPC connectivity (`ping` returning `"pong"`).
+4. **Code Quality**:
+   - `cargo fmt --check`: Passed (clean formatting across backend).
+   - `cargo clippy -- -D warnings`: Passed with zero warnings.
+   - `npm run build`: Passed (TypeScript check and Vite client bundling in 176ms).
+   - `npx tauri build --debug`: Built native executable `/home/colkam/coding/ytmusicclient/target/debug/musicwave`.
 
 ### Commands to Test
 
 ```bash
-# Start the dev app
+# Start the dev app (desktop window with hot reloading)
 npm run tauri dev
 
-# Verify Rust compiles cleanly
-cd src-tauri && cargo clippy -- -D warnings
-
-# Verify frontend compiles
+# Type check and build frontend bundle
 npm run build
+
+# Check Rust backend formatting and lints
+cd src-tauri && cargo fmt --check && cargo clippy -- -D warnings
 ```
 
 ### Known Issues / Notes for Sprint 1
-_Any caveats, workarounds, or tech debt introduced during this sprint._
+- Sprint 1 will build the full Search UI (search input with debouncing, search results grid with album art, and Zustand store integration).
+- The `ping` smoke test verified IPC communication; Sprint 1 will wire `invoke('search')` to the interactive search results view.

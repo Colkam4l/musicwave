@@ -1,4 +1,18 @@
+# Rust build artifacts
 /target
+/src-tauri/target
+
+# Node / Frontend build artifacts
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Sensitive credentials & environment
 headers.json
 po_token.txt
 .env
+
+# Editor & OS files
+.DS_Store
+*.log

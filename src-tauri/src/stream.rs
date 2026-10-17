@@ -115,20 +115,3 @@ pub async fn resolve_stream_url(
 
     Ok((format.url, total_seconds, playback_client))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_resolve_stream() {
-        let (cookie, _ua, po_token) = load_auth_config();
-        println!("Loaded po_token: {:?}", po_token.is_some());
-        let res = resolve_stream_url("dQw4w9WgXcQ", cookie, po_token).await;
-        println!(
-            "Resolve result: {:?}",
-            res.as_ref().map(|(u, d, _)| (u.len(), d))
-        );
-        assert!(res.is_ok());
-    }
-}

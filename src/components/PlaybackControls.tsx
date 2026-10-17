@@ -1,8 +1,9 @@
 import React from "react";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Loader2 } from "lucide-react";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
+  isBuffering?: boolean;
   disabled?: boolean;
   onTogglePlayPause: () => void;
   onPrev?: () => void;
@@ -11,6 +12,7 @@ interface PlaybackControlsProps {
 
 export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   isPlaying,
+  isBuffering = false,
   disabled = false,
   onTogglePlayPause,
   onPrev,
@@ -67,7 +69,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         type="button"
         disabled={disabled}
         onClick={onTogglePlayPause}
-        title={isPlaying ? "Pause" : "Play"}
+        title={isBuffering ? "Buffering audio..." : isPlaying ? "Pause" : "Play"}
         style={{
           width: 44,
           height: 44,
@@ -102,7 +104,9 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           }
         }}
       >
-        {isPlaying ? (
+        {isBuffering ? (
+          <Loader2 size={20} color="#ffffff" className="animate-spin" />
+        ) : isPlaying ? (
           <Pause size={20} fill="#ffffff" color="#ffffff" />
         ) : (
           <Play

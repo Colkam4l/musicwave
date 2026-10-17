@@ -17,12 +17,14 @@ export const usePlayer = () => {
   const {
     currentSong,
     isPlaying,
+    isBuffering,
     elapsedSeconds,
     totalSeconds,
     volume,
     authRequiredToast,
     setCurrentSong,
     setIsPlaying,
+    setIsBuffering,
     setProgress,
     setVolume,
     setAuthRequiredToast,
@@ -43,15 +45,20 @@ export const usePlayer = () => {
         if (typeof playing === "boolean") {
           setIsPlaying(playing);
         }
+        if (elapsed > 0) {
+          setIsBuffering(false);
+        }
         setProgress(elapsed, total);
       });
 
       unlistenEnded = await listen("player://ended", () => {
         setIsPlaying(false);
+        setIsBuffering(false);
       });
 
       unlistenAuthRequired = await listen("player://auth-required", () => {
         setAuthRequiredToast(true);
+        setIsBuffering(false);
       });
     };
 
@@ -62,21 +69,23 @@ export const usePlayer = () => {
       if (unlistenEnded) unlistenEnded();
       if (unlistenAuthRequired) unlistenAuthRequired();
     };
-  }, [setIsPlaying, setProgress, setAuthRequiredToast]);
+  }, [setIsPlaying, setIsBuffering, setProgress, setAuthRequiredToast]);
 
   const playSong = useCallback(
     async (song: Song) => {
       try {
         setCurrentSong(song);
         setIsPlaying(true);
+        setIsBuffering(true);
         await invoke("play_song", { videoId: song.videoId });
       } catch (err) {
         console.error("Error playing song:", err);
         // Ensure UI doesn't claim it's playing if an error occurred
         setIsPlaying(false);
+        setIsBuffering(false);
       }
     },
-    [setCurrentSong, setIsPlaying]
+    [setCurrentSong, setIsPlaying, setIsBuffering]
   );
 
   const togglePlayPause = useCallback(async () => {
@@ -123,6 +132,7 @@ export const usePlayer = () => {
   return {
     currentSong,
     isPlaying,
+    isBuffering,
     elapsedSeconds,
     totalSeconds,
     volume,

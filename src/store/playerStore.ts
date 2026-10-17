@@ -4,12 +4,14 @@ import { Song } from "../types/music";
 export interface PlayerState {
   currentSong: Song | null;
   isPlaying: boolean;
+  isBuffering: boolean;
   elapsedSeconds: number;
   totalSeconds: number;
   volume: number; // 0.0–1.0
   authRequiredToast: boolean;
   setCurrentSong: (song: Song | null) => void;
   setIsPlaying: (isPlaying: boolean) => void;
+  setIsBuffering: (isBuffering: boolean) => void;
   setProgress: (elapsedSeconds: number, totalSeconds: number) => void;
   setVolume: (volume: number) => void;
   setAuthRequiredToast: (show: boolean) => void;
@@ -19,6 +21,7 @@ export interface PlayerState {
 export const usePlayerStore = create<PlayerState>((set) => ({
   currentSong: null,
   isPlaying: false,
+  isBuffering: false,
   elapsedSeconds: 0,
   totalSeconds: 0,
   volume: 0.8,
@@ -30,6 +33,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
       totalSeconds: song?.durationSeconds ?? 0,
     }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
+  setIsBuffering: (isBuffering) => set({ isBuffering }),
   setProgress: (elapsedSeconds, totalSeconds) =>
     set((state) => ({
       elapsedSeconds,

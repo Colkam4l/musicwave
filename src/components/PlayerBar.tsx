@@ -9,6 +9,7 @@ export const PlayerBar: React.FC = () => {
   const {
     currentSong,
     isPlaying,
+    isBuffering,
     elapsedSeconds,
     totalSeconds,
     volume,
@@ -46,6 +47,7 @@ export const PlayerBar: React.FC = () => {
       {/* Center Left: Playback Controls */}
       <PlaybackControls
         isPlaying={isPlaying}
+        isBuffering={isBuffering}
         disabled={!currentSong}
         onTogglePlayPause={togglePlayPause}
       />

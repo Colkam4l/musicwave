@@ -38,9 +38,15 @@ pub fn load_auth_config() -> (Option<String>, Option<String>, Option<String>) {
     (cookie, user_agent, po_token)
 }
 
-pub async fn resolve_stream_url(video_id: &str) -> anyhow::Result<(String, Client)> {
+pub async fn resolve_stream_url(
+    video_id: &str,
+    cookie: Option<String>,
+    po_token: Option<String>,
+) -> anyhow::Result<(String, f64, Client)> {
     let video_url = format!("https://www.youtube.com/watch?v={}", video_id);
-    let (cookie, user_agent, po_token) = load_auth_config();
+    let (auth_cookie, user_agent, auth_po_token) = load_auth_config();
+    let effective_cookie = cookie.or(auth_cookie);
+    let effective_po_token = po_token.or(auth_po_token);
 
     let ua_string = user_agent.clone().unwrap_or_else(|| {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36".to_string()
@@ -78,8 +84,8 @@ pub async fn resolve_stream_url(video_id: &str) -> anyhow::Result<(String, Clien
         })),
         request_options: RequestOptions {
             client: Some(extraction_client),
-            cookies: cookie,
-            po_token,
+            cookies: effective_cookie,
+            po_token: effective_po_token,
             ..Default::default()
         },
         ..Default::default()
@@ -87,7 +93,12 @@ pub async fn resolve_stream_url(video_id: &str) -> anyhow::Result<(String, Clien
 
     let video = Video::new_with_options(&video_url, &video_options)?;
     let video_info = video.get_info().await?;
+    let total_seconds = video_info
+        .video_details
+        .length_seconds
+        .parse::<f64>()
+        .unwrap_or(0.0);
     let format = choose_format(&video_info.formats, &video_options)?;
 
-    Ok((format.url, playback_client))
+    Ok((format.url, total_seconds, playback_client))
 }

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Music, Play, Disc, Clock } from "lucide-react";
+import { Music, Play, Pause, Disc, Clock } from "lucide-react";
 import { Song } from "../types/music";
+import { usePlayer } from "../hooks/usePlayer";
 
 interface SongCardProps {
   song: Song;
@@ -11,17 +12,29 @@ interface SongCardProps {
 export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
 
+  const isCurrentSong = currentSong?.videoId === song.videoId;
+
+  const handleClick = () => {
+    if (isCurrentSong) {
+      togglePlayPause();
+    } else if (onSelect) {
+      onSelect(song);
+    } else {
+      playSong(song);
+    }
+  };
   return (
     <div
-      onClick={() => onSelect && onSelect(song)}
+      onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          onSelect && onSelect(song);
+          handleClick();
         }
       }}
       style={{
@@ -30,25 +43,41 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
         gap: "1rem",
         padding: "0.6rem 1rem",
         borderRadius: "var(--radius-md)",
-        background: isHovered ? "var(--bg-surface-hover)" : "transparent",
+        background: isCurrentSong
+          ? "rgba(124, 58, 237, 0.12)"
+          : isHovered
+            ? "var(--bg-surface-hover)"
+            : "transparent",
         cursor: "pointer",
         transition: "var(--transition-fast)",
         transform: isHovered ? "translateY(-1px)" : "none",
         outline: "none",
+        border: isCurrentSong
+          ? "1px solid rgba(124, 58, 237, 0.28)"
+          : "1px solid transparent",
       }}
     >
-      {/* Index or Play icon */}
+      {/* Index or Play/Pause icon */}
       <div
         style={{
           width: 24,
           textAlign: "center",
           fontSize: "var(--font-size-sm)",
-          color: isHovered ? "var(--accent)" : "var(--text-muted)",
+          color:
+            isCurrentSong || isHovered
+              ? "var(--accent-rose)"
+              : "var(--text-muted)",
           fontWeight: 600,
           flexShrink: 0,
         }}
       >
-        {isHovered ? <Play size={16} fill="var(--accent)" color="var(--accent)" /> : index + 1}
+        {isCurrentSong && isPlaying ? (
+          <Pause size={16} fill="var(--accent-rose)" color="var(--accent-rose)" />
+        ) : isHovered || isCurrentSong ? (
+          <Play size={16} fill="var(--accent-rose)" color="var(--accent-rose)" />
+        ) : (
+          index + 1
+        )}
       </div>
 
       {/* 48x48 Thumbnail with fallback */}

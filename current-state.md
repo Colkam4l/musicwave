@@ -12,17 +12,18 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 *   **CLI Audio Engine (Pre-Sprint 0):** YouTube Music search, YouTube signature cipher bypass, HTTP stream buffering, and CLI audio playback verified in Rust.
 *   **Sprint 0 — Tauri Project Scaffolding:** Tauri v2 project initialized, Rust audio engine refactored into modular crates (`audio.rs`, `search.rs`, `stream.rs`, `commands.rs`), React + TypeScript + Vite frontend configured, IPC commands registered, and build verified.
 *   **Sprint 1 — Core Search UI:** Full YouTube Music search interface implemented with `SearchBar`, `SongList`, `SongCard`, `Spinner`, Zustand `searchStore`, `useSearch` hook, design system in `index.css`, React Router navigation in `App.tsx`, and backend metadata serialization (`videoId`, `title`, `artist`, `album`, `duration`, `durationSeconds`, `thumbnailUrl`).
+*   **Sprint 2 — Audio Playback & Player Bar:** Rust audio playback engine implemented with rodio + stream-download (`play`, `pause`, `resume`, `stop`, `seek`, `set_volume`), real-time progress events (`player://progress`, `player://ended`, `player://auth-required`), persistent bottom glassmorphism Player Bar with album art glow ring, iridescent play/pause toggle button, scrubable progress bar, volume control, and non-blocking auth toast.
 
 ### Active Sprint
-*   **Sprint 2 — Audio Playback & Player Bar:** ⏳ Next to start.
+*   **Sprint 3 — Queue, Library & Navigation:** ⏳ Next to start.
 
 ### Sprints Overview
 | Sprint | Name | Status |
 |---|---|---|
 | [0](./sprints/SPRINT-0.md) | Tauri Project Scaffolding | ✅ Complete |
 | [1](./sprints/SPRINT-1.md) | Core Search UI | ✅ Complete |
-| [2](./sprints/SPRINT-2.md) | Audio Playback & Player Bar | ⏳ Next |
-| [3](./sprints/SPRINT-3.md) | Queue, Library & Navigation | ⏳ Not Started |
+| [2](./sprints/SPRINT-2.md) | Audio Playback & Player Bar | ✅ Complete |
+| [3](./sprints/SPRINT-3.md) | Queue, Library & Navigation | ⏳ Next |
 | [4](./sprints/SPRINT-4.md) | Polish, Settings & Auth UX | ⏳ Not Started |
 | [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | ⏳ Not Started |
 
@@ -46,18 +47,26 @@ musicwave/
 │   └── icons/                   # Application icons
 ├── src/                         # React + TypeScript frontend (Vite)
 │   ├── main.tsx                 # React entry point
-│   ├── App.tsx                  # Root app component + React Router
-│   ├── index.css                # Global design tokens (CSS variables, reset)
+│   ├── App.tsx                  # Root app component + React Router + PlayerBar
+│   ├── index.css                # Global design tokens (iridescent gradient, glassmorphism, reset)
 │   ├── pages/
 │   │   └── SearchPage.tsx       # Main search screen
 │   ├── components/
+│   │   ├── AuthToast.tsx        # Non-blocking authentication prompt toast
+│   │   ├── NowPlaying.tsx       # Thumbnail with glow ring + song title & artist
+│   │   ├── PlaybackControls.tsx # Iridescent play/pause button, prev/next stubs
+│   │   ├── PlayerBar.tsx        # Bottom glassmorphism container
+│   │   ├── ProgressBar.tsx      # Scrubable progress bar with gradient fill
 │   │   ├── SearchBar.tsx        # Styled input with clear button and loading state
-│   │   ├── SongCard.tsx         # Result row with thumbnail, metadata, duration
+│   │   ├── SongCard.tsx         # Result row with thumbnail, metadata, duration, click-to-play
 │   │   ├── SongList.tsx         # Container with states (empty, loading, results, error)
-│   │   └── Spinner.tsx          # Loading indicator
+│   │   ├── Spinner.tsx          # Loading indicator
+│   │   └── VolumeControl.tsx    # Volume slider & mute toggle
 │   ├── hooks/
-│   │   └── useSearch.ts         # Tauri IPC invocation & store integration
+│   │   ├── usePlayer.ts         # Audio playback IPC & event listeners
+│   │   └── useSearch.ts         # Search IPC invocation & store integration
 │   ├── store/
+│   │   ├── playerStore.ts       # Zustand store for playback & now-playing state
 │   │   └── searchStore.ts       # Zustand store for query and results
 │   └── types/
 │       └── music.ts             # Song & SearchState interfaces

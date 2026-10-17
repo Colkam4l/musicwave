@@ -1,25 +1,44 @@
 # CLAUDE.md — Operating Manual
 
-Operating rules, commands, and code styling standards for the Rust YouTube Music client workspace.
+Operating rules, commands, and code styling standards for the MusicWave project.
+
+> **Sprint planning:** See [`sprints/README.md`](./sprints/README.md) for the full development roadmap.
+
+---
 
 ## 1. Project Definition
-A native, Wayland-compatible, multiplatform desktop client for YouTube Music written in Rust. It utilizes the unofficial YouTubei API for metadata, `rusty_ytdl` and `stream-download` for audio stream extraction/buffering, and `rodio` for playback. It integrates with Wayland (Niri) natively, D-Bus (MPRIS) for system integration, and the iNiR shell for dynamic wallpaper-based theming.
+
+MusicWave is a native, multiplatform YouTube Music client. The architecture is split into two layers:
+
+- **Rust backend** (`src-tauri/`): handles all audio logic, YouTube Music API queries, stream URL resolution, and system integrations. Built on `tokio`, `ytmapi-rs`, `youtui-vendored-rusty_ytdl`, `stream-download`, and `rodio`.
+- **React frontend** (`src/`): the user interface, built with React 18 + TypeScript + Vite. Communicates with the Rust backend exclusively through the Tauri IPC bridge (`invoke` calls and event listeners).
+
+The desktop app is packaged with **Tauri v2**. The same codebase will be compiled to Android in Sprint 5 using Tauri's mobile build targets.
+
+> **ADR note:** The project originally planned Slint as the GUI framework. This was replaced by Tauri + React — see ADR 3 in [`decisions.md`](./decisions.md) for the full rationale.
 
 ---
 
 ## 2. Core Execution Commands
 
-### Build & Run
-*   **Compile project:** `cargo build`
-*   **Compile production release:** `cargo build --release`
-*   **Run development server/app:** `cargo run`
-*   **Run with custom log level:** `RUST_LOG=info cargo run`
+### Rust Backend
+*   **Compile backend only:** `cd src-tauri && cargo build`
+*   **Lint backend:** `cd src-tauri && cargo clippy -- -D warnings`
+*   **Format backend:** `cd src-tauri && cargo fmt`
+*   **Test backend:** `cd src-tauri && cargo test`
 
-### Quality Assurance
-*   **Run test suite:** `cargo test`
-*   **Check code formatting:** `cargo fmt --check`
-*   **Apply code formatting:** `cargo fmt`
-*   **Run linter:** `cargo clippy -- -D warnings`
+### Full App (Tauri + Frontend)
+*   **Start dev app:** `npm run tauri dev`
+*   **Build production bundle:** `npm run tauri build`
+
+### Frontend Only
+*   **Start Vite dev server (no Tauri):** `npm run dev`
+*   **Type-check:** `npm run typecheck` (or `npx tsc --noEmit`)
+*   **Build frontend:** `npm run build`
+
+### Android
+*   **Start Android dev app:** `cargo tauri android dev`
+*   **Build Android APK:** `cargo tauri android build --debug`
 
 ---
 
@@ -27,22 +46,59 @@ A native, Wayland-compatible, multiplatform desktop client for YouTube Music wri
 
 ### Rust Constraints
 *   **Async Runtime:** Use [`tokio`](https://crates.io/crates/tokio) with multi-threaded features.
-*   **Error Handling:** Use [`anyhow`](https://crates.io/crates/anyhow) for application-level binaries, or custom enums with [`thiserror`](https://crates.io/crates/thiserror) if building API crates.
-*   **Imports Order:** Group standard library imports (`std::*`) first, followed by third-party external crates, then internal module imports (`crate::*`).
-*   **Concurrency:** Use standard async synchronization tools from `tokio::sync` (e.g., `mpsc` channels, `Mutex`, `RwLock`) to communicate between the audio player thread and the UI rendering loop.
+*   **Error Handling:** Use [`anyhow`](https://crates.io/crates/anyhow) for application-level errors. Use [`thiserror`](https://crates.io/crates/thiserror) for library-style error enums if a module needs typed errors.
+*   **Imports Order:** Group standard library (`std::*`) first, then third-party crates, then internal modules (`crate::*`). Separate each group with a blank line.
+*   **Concurrency:** Use `tokio::sync::Mutex` and `tokio::sync::mpsc` for shared state and inter-thread messaging between the audio thread and Tauri command handlers.
+*   **Platform Guards:** Use `#[cfg(target_os = "linux")]` / `#[cfg(target_os = "android")]` for platform-specific code. Never use runtime OS detection when compile-time is available.
 
-### UI Styling (Slint)
-*   UI layouts must be defined in separate `.slint` files under `ui/` rather than embedded in Rust macros.
-*   UI components must follow a clean, modern aesthetic with styling keys mapped to dynamic variables loaded from the parsed dynamic theme.
-*   All layouts should remain responsive and work well on small tiling widths (Niri vertical strips) as well as full-screen landscapes.
+### React / TypeScript Constraints
+*   **Components:** Functional components only. No class components.
+*   **State:** Global state via **Zustand** stores (in `src/store/`). Local component state via `useState`/`useReducer`.
+*   **Tauri IPC:** Always use `invoke` from `@tauri-apps/api/core` and `listen` from `@tauri-apps/api/event`. Never use `window.__TAURI__` directly.
+*   **TypeScript:** Strict mode enabled. No `any` types. All Tauri command return shapes must have a matching TypeScript interface in `src/types/`.
+*   **Imports:** Absolute imports via `@/` alias (configured in `vite.config.ts` and `tsconfig.json`).
+
+### UI Styling
+*   **CSS variables only** — all colours, spacing, radii, and font sizes must be defined as CSS custom properties in `src/index.css`. No hardcoded hex values or magic numbers in component files.
+*   **Dark theme by default** — `--bg-primary: #0d0d0d`, `--bg-surface: #1a1a1a`, accent is a deep rose/music tone.
+*   **Font:** Inter (imported from Google Fonts).
+*   **Animations:** Use **Framer Motion** for page transitions and component mount/unmount animations. Keep durations under 200ms for interactive feedback.
+*   **Mobile:** Touch targets must be >= 44x44px. Use `env(safe-area-inset-bottom)` for bottom navigation on Android.
+*   **No Tailwind** — use CSS Modules or global CSS variables.
 
 ---
 
-## 4. Git & Branching Strategy
+## 4. Module Structure (Rust)
+
+```
+src-tauri/src/
+├── main.rs         # Tauri app entry point (minimal — delegates to lib.rs)
+├── lib.rs          # Registers all Tauri commands and plugins, spawns background services
+├── commands.rs     # All #[tauri::command] functions — thin wrappers that call into modules
+├── search.rs       # YouTube Music search via ytmapi-rs
+├── stream.rs       # Stream URL resolution via rusty_ytdl + auth config loading
+├── audio.rs        # Audio playback engine (rodio + stream-download), global player state
+├── queue.rs        # In-memory play queue (VecDeque<SongResult>)
+├── library.rs      # Persistent liked songs and recently played (library.json)
+├── settings.rs     # Persistent user settings (settings.json: auth credentials, prefs)
+├── mpris.rs        # MPRIS D-Bus interface (Linux only)
+└── tray.rs         # System tray icon and menu (desktop only)
+```
+
+---
+
+## 5. Git & Branching Strategy
+
 *   **Branch Naming:**
     *   `feature/sprint-<number>-<description>` for sprint tasks.
     *   `bugfix/<issue-id>-<description>` for bug fixes.
-*   **Commit Message Convention:** Follow conventional commits (e.g., `feat: add audio playback engine`, `fix: handle invalid video ids`).
-*   **PR Requirement:** PRs must include:
-    1. A verification log verifying successful tests and lint passes.
-    2. A checklist of environment files or dependencies modified.
+*   **Commit Message Convention:** Follow Conventional Commits:
+    *   `feat: add play_song tauri command`
+    *   `fix: handle missing headers.json gracefully`
+    *   `refactor: split main.rs into audio and search modules`
+    *   `docs: update current-state.md for sprint 2`
+*   **PR Requirements:** PRs must include:
+    1. Passing `cargo clippy -- -D warnings` output.
+    2. Passing `npm run build` with zero TypeScript errors.
+    3. The **End-of-Sprint Report** section filled in for the relevant sprint doc.
+    4. Updated `current-state.md` reflecting the new state of the project.

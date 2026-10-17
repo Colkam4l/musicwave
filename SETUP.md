@@ -49,3 +49,61 @@ If you want to run the client in guest mode (public search/streams only) without
     ```bash
     cargo run -- "your search query"
     ```
+
+---
+
+## 4. Tauri v2 Development Prerequisites (Sprint 0+)
+
+From Sprint 0 onwards, the project uses Tauri v2. You need both Rust and Node.js tooling.
+
+### System Dependencies (Arch Linux)
+
+```bash
+# Tauri system deps (WebKit, GTK, etc.)
+sudo pacman -S webkit2gtk-4.1 base-devel curl wget openssl appmenu-gtk-module libappindicator-gtk3
+
+# Node.js (LTS)
+sudo pacman -S nodejs npm
+```
+
+### Install Frontend Dependencies
+
+After cloning the repo (once Sprint 0 is complete):
+```bash
+npm install
+```
+
+### Start the Dev App
+
+```bash
+npm run tauri dev
+```
+
+---
+
+## 5. Android Prerequisites (Sprint 5+)
+
+Required to build the Android APK:
+
+```bash
+# Install Android SDK and NDK via Android Studio (recommended)
+# Then set environment variables:
+export ANDROID_HOME="$HOME/Android/Sdk"
+export NDK_HOME="$ANDROID_HOME/ndk/$(ls $ANDROID_HOME/ndk | head -1)"
+
+# Add Rust cross-compilation targets
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
+# Install cargo-ndk helper
+cargo install cargo-ndk
+```
+
+Start Android dev:
+```bash
+cargo tauri android dev
+```
+
+Build a debug APK:
+```bash
+cargo tauri android build --debug
+```

@@ -48,3 +48,41 @@ We select the combination of:
     *   No local file download is needed before playback starts; `stream-download` handles caching chunks to disk/memory dynamically.
 *   **Cons:**
     *   YouTube frequently updates its cipher/signature systems, meaning `rusty_ytdl` might break and require dependency updates.
+
+---
+
+## ADR 3: Pivot from Slint to Tauri v2 + React as the GUI Framework
+
+### Context
+
+ADR 1 selected Slint as the GUI framework. After the project's goals evolved to include:
+1. A visual interface resembling a modern streaming app (search results with thumbnails, a persistent player bar, album art).
+2. A future Android port.
+3. A design workflow where the UI can be iterated quickly using familiar web tooling.
+
+Slint's `.slint` markup language and its limited dynamic styling support made these goals significantly harder to achieve. Web technologies (HTML/CSS/React) are the dominant ecosystem for music player UIs specifically because they handle rich media cards, responsive layouts, and animations with mature tooling.
+
+### Decision
+
+Replace Slint with **Tauri v2 + React 18 + TypeScript + Vite**:
+*   **Tauri v2** acts as the native desktop shell, providing the window, system tray, OS file system access, and the IPC bridge between Rust and the frontend.
+*   **React 18 + TypeScript** is the frontend framework.
+*   **Vite** is the frontend bundler (fast HMR for rapid UI iteration).
+*   The existing Rust audio engine (`rodio`, `stream-download`, `rusty_ytdl`) is **preserved entirely** — Tauri wraps it, not replaces it.
+
+### Consequences
+
+*   **Pros:**
+    *   Rich, modern UI is achievable with CSS, Framer Motion, and React ecosystem libraries.
+    *   The same Tauri project supports **Android and iOS** as build targets (via `cargo tauri android init`) — the Rust backend carries over with zero changes.
+    *   Faster iteration: `npm run tauri dev` with Vite's HMR means UI changes appear instantly without recompiling Rust.
+    *   Auth credentials can be stored and edited through a Settings UI page (Sprint 4) — no more manual `headers.json` file editing.
+*   **Cons:**
+    *   Adds Node.js and npm to the development prerequisites.
+    *   Tauri bundles a WebView (WebKit on Linux/macOS, WebView2 on Windows) — slightly larger binary than a pure Slint binary.
+    *   The `.slint` syntax investment from ADR 1 is discarded.
+
+### Migration Notes
+
+*   The existing `src/main.rs` CLI engine is moved to `src-tauri/src/` and refactored into modules (`audio.rs`, `search.rs`, `stream.rs`, `commands.rs`) in Sprint 0.
+*   All Rust dependencies in `Cargo.toml` are preserved. Only `tauri` and platform-specific deps are added.

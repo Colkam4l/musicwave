@@ -17,6 +17,7 @@ pub fn run() {
         .manage(player)
         .invoke_handler(tauri::generate_handler![
             commands::ping,
+            commands::search_songs,
             commands::search,
             commands::play,
             commands::pause,

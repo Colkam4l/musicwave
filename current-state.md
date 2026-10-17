@@ -6,21 +6,22 @@
 
 ## 1. Project Overview & Status
 
-MusicWave is a native, multiplatform YouTube Music client. The project has pivoted from a Slint GUI to a **Tauri v2 + React + TypeScript** stack (see ADR 3 in [`decisions.md`](./decisions.md)).
+MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 + React 19 + TypeScript** stack (see ADR 3 in [`decisions.md`](./decisions.md)).
 
 ### Completed Work
 *   **CLI Audio Engine (Pre-Sprint 0):** YouTube Music search, YouTube signature cipher bypass, HTTP stream buffering, and CLI audio playback verified in Rust.
-*   **Sprint 0 — Tauri Project Scaffolding:** Tauri v2 project initialized, Rust audio engine refactored into modular crates (`audio.rs`, `search.rs`, `stream.rs`, `commands.rs`), React + TypeScript + Vite frontend configured, IPC commands registered (`ping`, `search`, `play`, `pause`, `resume`, `stop`), and build verified.
+*   **Sprint 0 — Tauri Project Scaffolding:** Tauri v2 project initialized, Rust audio engine refactored into modular crates (`audio.rs`, `search.rs`, `stream.rs`, `commands.rs`), React + TypeScript + Vite frontend configured, IPC commands registered, and build verified.
+*   **Sprint 1 — Core Search UI:** Full YouTube Music search interface implemented with `SearchBar`, `SongList`, `SongCard`, `Spinner`, Zustand `searchStore`, `useSearch` hook, design system in `index.css`, React Router navigation in `App.tsx`, and backend metadata serialization (`videoId`, `title`, `artist`, `album`, `duration`, `durationSeconds`, `thumbnailUrl`).
 
 ### Active Sprint
-*   **Sprint 1 — Core Search UI:** ⏳ Next to start.
+*   **Sprint 2 — Audio Playback & Player Bar:** ⏳ Next to start.
 
 ### Sprints Overview
 | Sprint | Name | Status |
 |---|---|---|
 | [0](./sprints/SPRINT-0.md) | Tauri Project Scaffolding | ✅ Complete |
-| [1](./sprints/SPRINT-1.md) | Core Search UI | ⏳ Next |
-| [2](./sprints/SPRINT-2.md) | Audio Playback & Player Bar | ⏳ Not Started |
+| [1](./sprints/SPRINT-1.md) | Core Search UI | ✅ Complete |
+| [2](./sprints/SPRINT-2.md) | Audio Playback & Player Bar | ⏳ Next |
 | [3](./sprints/SPRINT-3.md) | Queue, Library & Navigation | ⏳ Not Started |
 | [4](./sprints/SPRINT-4.md) | Polish, Settings & Auth UX | ⏳ Not Started |
 | [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | ⏳ Not Started |
@@ -36,7 +37,7 @@ musicwave/
 │   │   ├── main.rs              # Tauri app entry point
 │   │   ├── lib.rs               # Tauri builder and command registration
 │   │   ├── audio.rs             # Audio engine (rodio + stream-download)
-│   │   ├── search.rs            # YouTube Music search (ytmapi-rs)
+│   │   ├── search.rs            # YouTube Music search (ytmapi-rs) + unit tests
 │   │   ├── stream.rs            # Stream URL resolution (rusty_ytdl)
 │   │   └── commands.rs          # All #[tauri::command] functions (IPC bridge)
 │   ├── Cargo.toml               # Tauri backend dependencies
@@ -45,24 +46,35 @@ musicwave/
 │   └── icons/                   # Application icons
 ├── src/                         # React + TypeScript frontend (Vite)
 │   ├── main.tsx                 # React entry point
-│   ├── App.tsx                  # Root app component
+│   ├── App.tsx                  # Root app component + React Router
 │   ├── index.css                # Global design tokens (CSS variables, reset)
-│   └── components/
-│       └── Placeholder.tsx      # Minimal placeholder proving window renders & IPC connects
+│   ├── pages/
+│   │   └── SearchPage.tsx       # Main search screen
+│   ├── components/
+│   │   ├── SearchBar.tsx        # Styled input with clear button and loading state
+│   │   ├── SongCard.tsx         # Result row with thumbnail, metadata, duration
+│   │   ├── SongList.tsx         # Container with states (empty, loading, results, error)
+│   │   └── Spinner.tsx          # Loading indicator
+│   ├── hooks/
+│   │   └── useSearch.ts         # Tauri IPC invocation & store integration
+│   ├── store/
+│   │   └── searchStore.ts       # Zustand store for query and results
+│   └── types/
+│       └── music.ts             # Song & SearchState interfaces
 ├── public/                      # Static assets
 ├── index.html                   # Vite HTML entry point
 ├── vite.config.ts               # Vite configuration (base: "./")
 ├── tsconfig.json                # TypeScript config
 ├── tsconfig.node.json           # TypeScript config for node/vite
-├── package.json                 # Frontend dependencies and scripts
+├── package.json                 # Frontend dependencies (Zustand, React Router, Lucide)
 ├── CLAUDE.md                    # Operating manual and code standards
 ├── current-state.md             # Live system snapshot (this file)
 ├── decisions.md                 # Architectural Decision Records (ADRs)
 ├── SETUP.md                     # Environment and authentication setup guide
 ├── sprints/
 │   ├── README.md                # Sprint index and conventions
-│   ├── SPRINT-0.md              # Sprint 0 details & report
-│   ├── SPRINT-1.md              # Search UI plan
+│   ├── SPRINT-0.md              # Sprint 0 details & report (Complete)
+│   ├── SPRINT-1.md              # Sprint 1 details & report (Complete)
 │   ├── SPRINT-2.md              # Player bar plan
 │   ├── SPRINT-3.md              # Queue and library plan
 │   ├── SPRINT-4.md              # Polish and settings plan
@@ -82,19 +94,21 @@ musicwave/
 *   **youtui-vendored-rusty_ytdl:** YouTube signature cipher and audio format resolver.
 *   **stream-download:** HTTP range request streaming and local cache buffering.
 *   **rodio:** Audio decoding and output to system soundcard.
-*   **reqwest:** HTTP client (with JSON support) for custom authenticated requests.
+*   **reqwest:** HTTP client for custom authenticated requests.
 *   **serde / serde_json:** Serialization for API responses and config files.
 
 ### Frontend
 *   **Tauri v2:** Desktop app shell and IPC bridge (`@tauri-apps/api`, `@tauri-apps/plugin-opener`).
 *   **React 19 + TypeScript + Vite:** Frontend framework and bundler.
-*   **Zustand:** Lightweight global state management (to be integrated in Sprint 1).
+*   **Zustand:** Lightweight global state management for search.
+*   **React Router DOM:** Client-side routing.
+*   **Lucide React:** Icons.
 
 ---
 
 ## 4. Endpoints & Integrations
 
-*   **YouTubei API (Unofficial):** Search query and song metadata resolution.
+*   **YouTubei API (Unofficial):** Search query and song metadata resolution (`search_songs` command).
 *   **YouTube Stream URLs:** Direct audio stream extraction via `rusty_ytdl`.
 *   **D-Bus MPRIS:** System media key integration — Sprint 4, Linux only.
 *   **Android AAudio:** Audio output on Android — Sprint 5.

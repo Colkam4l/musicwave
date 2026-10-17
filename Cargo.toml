@@ -1,0 +1,19 @@
+[package]
+name = "ytmusicclient"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.103"
+regex = "1.12.4"
+reqwest = { version = "0.13.4", features = ["json"] }
+rodio = "0.22.2"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+stream-download = { version = "0.24.1", features = ["async-read"] }
+tokio = { version = "1.52.3", features = ["full"] }
+tokio-util = { version = "0.7.13", features = ["io"] }
+futures-util = "0.3.31"
+bytes = "1.10.0"
+youtui-vendored-rusty_ytdl = "0.7.4-youtui-vendored.4"
+ytmapi-rs = "0.3.2"

@@ -22,14 +22,17 @@ pub async fn search(query: String) -> Result<Vec<SongResult>, String> {
 pub async fn play_song(video_id: String, app_handle: AppHandle) -> Result<(), String> {
     let (cookie, _user_agent, po_token) = load_auth_config();
 
-    // If headers.json does not exist or cookie is missing, notify frontend
-    if !std::path::Path::new("headers.json").exists() && cookie.is_none() {
+    // If neither cookie nor po_token is available, warn user
+    if cookie.is_none() && po_token.is_none() {
         let _ = app_handle.emit("player://auth-required", ());
     }
 
     let (stream_url, total_seconds, client) = resolve_stream_url(&video_id, cookie, po_token)
         .await
-        .map_err(|e| format!("Failed to resolve stream: {e}"))?;
+        .map_err(|e| {
+            let _ = app_handle.emit("player://auth-required", ());
+            format!("Failed to resolve stream: {e}")
+        })?;
 
     audio::play(stream_url, total_seconds, client, app_handle)
         .await

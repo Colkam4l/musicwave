@@ -14,13 +14,26 @@ struct HeadersConfig {
     cookie: Option<String>,
 }
 
+fn read_file_multi_path(filename: &str) -> Option<String> {
+    for path in [
+        filename.to_string(),
+        format!("../{}", filename),
+        format!("src-tauri/{}", filename),
+    ] {
+        if let Ok(content) = std::fs::read_to_string(&path) {
+            return Some(content);
+        }
+    }
+    None
+}
+
 pub fn load_auth_config() -> (Option<String>, Option<String>, Option<String>) {
     let mut cookie = None;
     let mut user_agent = None;
     let mut po_token = None;
 
     // Try loading headers.json
-    if let Ok(content) = std::fs::read_to_string("headers.json")
+    if let Some(content) = read_file_multi_path("headers.json")
         && let Ok(config) = serde_json::from_str::<HeadersConfig>(&content)
     {
         cookie = config.cookie;
@@ -28,7 +41,7 @@ pub fn load_auth_config() -> (Option<String>, Option<String>, Option<String>) {
     }
 
     // Try loading po_token.txt
-    if let Ok(content) = std::fs::read_to_string("po_token.txt") {
+    if let Some(content) = read_file_multi_path("po_token.txt") {
         let trimmed = content.trim().to_string();
         if !trimmed.is_empty() {
             po_token = Some(trimmed);
@@ -101,4 +114,21 @@ pub async fn resolve_stream_url(
     let format = choose_format(&video_info.formats, &video_options)?;
 
     Ok((format.url, total_seconds, playback_client))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_resolve_stream() {
+        let (cookie, _ua, po_token) = load_auth_config();
+        println!("Loaded po_token: {:?}", po_token.is_some());
+        let res = resolve_stream_url("dQw4w9WgXcQ", cookie, po_token).await;
+        println!(
+            "Resolve result: {:?}",
+            res.as_ref().map(|(u, d, _)| (u.len(), d))
+        );
+        assert!(res.is_ok());
+    }
 }

@@ -19,6 +19,18 @@ This sprint involves the deepest Tauri IPC work: bi-directional communication wh
 
 See **ADR 2** in [`decisions.md`](../decisions.md) for the audio stack rationale (rodio + stream-download + rusty_ytdl).
 
+### Design Direction (CONFIRMED — Sprint 2 Onwards)
+
+The player bar is the **primary showpiece** for the confirmed visual identity:
+
+> **Hybrid: Glassmorphism Player Bar + Premium Dark Content**
+>
+> - Content zone (search, song list): deep `#0d0d0d` background, `#161616` surfaces, subtle hover lifts
+> - **Player Bar**: full glassmorphism — `backdrop-filter: blur(28px) saturate(180%)`, semi-transparent dark glass, luminous `rgba(255,255,255,0.13)` border
+> - **Accent**: iridescent gradient `rose #e91e8c → violet #7c3aed → blue #3b82f6` on the play button, progress bar fill, and glow ring around album art
+
+The full design token spec is in **[CLAUDE.md § UI Styling — Design System](../CLAUDE.md)**.
+
 ---
 
 ## 2. Deliverables
@@ -34,7 +46,7 @@ src-tauri/src/
 
 src/
 ├── components/
-│   ├── PlayerBar.tsx             # CREATE — persistent bottom bar (always visible)
+│   ├── PlayerBar.tsx             # CREATE — persistent bottom glassmorphism bar (always visible)
 │   ├── PlaybackControls.tsx      # CREATE — prev / play-pause / next buttons
 │   ├── ProgressBar.tsx           # CREATE — scrubable seek bar with elapsed/total time
 │   ├── VolumeControl.tsx         # CREATE — volume slider
@@ -68,7 +80,7 @@ src/
   // Event name: "player://progress"
   // Payload: { elapsed_seconds: f64, total_seconds: f64, is_playing: bool }
   app_handle.emit("player://progress", payload)?;
-  
+
   // Event name: "player://ended"
   // Payload: {}
   app_handle.emit("player://ended", ())?;
@@ -87,12 +99,12 @@ src/
   ```
 - [ ] **T2-7:** In `usePlayer.ts`, set up `listen('player://progress', ...)` and `listen('player://ended', ...)` from `@tauri-apps/api/event` to keep `playerStore` in sync.
 - [ ] **T2-8:** In `SongCard.tsx` (from Sprint 1), wire `onClick` to call `invoke('play_song', { videoId: song.videoId })` and update `playerStore.currentSong`.
-- [ ] **T2-9:** Build `NowPlaying.tsx` — shows the current song's thumbnail (40×40), title (truncated), and artist name. Only visible when `currentSong !== null`.
-- [ ] **T2-10:** Build `PlaybackControls.tsx` — play/pause toggle button, previous and next buttons (previous/next are stub no-ops until Sprint 3 introduces the queue).
-- [ ] **T2-11:** Build `ProgressBar.tsx` — a range input styled as a seek bar, showing `elapsedSeconds / totalSeconds`. Dragging calls `invoke('seek_to', { positionSeconds })`.
+- [ ] **T2-9:** Build `NowPlaying.tsx` — shows the current song's thumbnail (40×40 with iridescent glow ring), title (truncated), and artist name. Only visible when `currentSong !== null`.
+- [ ] **T2-10:** Build `PlaybackControls.tsx` — play/pause toggle button (uses iridescent gradient fill when playing), previous and next buttons (stubs until Sprint 3 queue).
+- [ ] **T2-11:** Build `ProgressBar.tsx` — a range input styled as a seek bar using the iridescent gradient for the filled portion, showing `elapsedSeconds / totalSeconds`. Dragging calls `invoke('seek_to', { positionSeconds })`.
 - [ ] **T2-12:** Build `VolumeControl.tsx` — a range input (0–100). Changes call `invoke('set_volume', { volume })` (add this command in `commands.rs`).
-- [ ] **T2-13:** Assemble `PlayerBar.tsx` — `[NowPlaying] [PlaybackControls] [ProgressBar] [VolumeControl]` laid out in a single row, fixed to bottom of the window.
-- [ ] **T2-14:** In `App.tsx`, render `<PlayerBar>` outside the router so it persists across all pages.
+- [ ] **T2-13:** Assemble `PlayerBar.tsx` — `[NowPlaying] [PlaybackControls] [ProgressBar] [VolumeControl]` in a single row, fixed to the bottom of the window with **glassmorphism styling**.
+- [ ] **T2-14:** In `App.tsx`, render `<PlayerBar>` outside the router so it persists across all pages. Also add bottom padding (`padding-bottom: 88px`) to page content to prevent the player bar from overlapping content.
 
 #### Auth Integration
 - [ ] **T2-15:** Before resolving the stream URL, `play_song` must call `load_auth_config()`. If no auth file is found, emit a `player://auth-required` event so the frontend can display a setup prompt.
@@ -101,15 +113,61 @@ src/
 
 ## 3. Implementation Notes
 
+### Player Bar Visual Spec (CRITICAL)
+
+The player bar must match the confirmed design direction. Do NOT use a plain dark bar — use the full glassmorphism recipe:
+
+```css
+/* PlayerBar container */
+position: fixed;
+bottom: 0;
+left: 0;
+right: 0;
+height: 80px;
+z-index: 100;
+
+/* Glassmorphism */
+background: rgba(12, 12, 12, 0.72);
+backdrop-filter: blur(28px) saturate(180%);
+-webkit-backdrop-filter: blur(28px) saturate(180%);
+border-top: 1px solid rgba(255, 255, 255, 0.13);
+box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.6);
+```
+
+**Album art glow ring** (NowPlaying thumbnail):
+```css
+/* Wrap the 40×40 thumbnail in a div */
+border-radius: 8px;
+box-shadow:
+  0 0 0 2px rgba(255, 255, 255, 0.06),
+  0 0 20px rgba(124, 58, 237, 0.40); /* var(--accent-glow) */
+```
+
+**Play button** (PlaybackControls):
+```css
+background: var(--accent-gradient); /* linear-gradient(135deg, #e91e8c, #7c3aed, #3b82f6) */
+border-radius: 50%;
+width: 44px;
+height: 44px;
+box-shadow: 0 4px 16px rgba(124, 58, 237, 0.40);
+```
+
+**Progress bar fill**:
+```css
+/* Use accent-gradient for the filled track */
+accent-color: var(--accent-violet); /* fallback for range inputs */
+/* Custom track fill via CSS custom properties or a div overlay */
+```
+
 ### Player Bar Layout
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ [thumb] Title · Artist  │ ⏮  ⏸  ⏭ │ ━━━━●━━━━ 1:23/3:45 │ 🔊──● │
+│ [glow-thumb] Title · Artist  │ ⏮  ◉  ⏭ │ ━━━━●━━━━ 1:23/3:45 │ 🔊──● │
 └─────────────────────────────────────────────────────────┘
 ```
-- Height: 72px fixed
-- Background: `var(--bg-surface)` with a top border 1px solid `var(--border-subtle)`
+- Height: 80px fixed (increased from 72px for touch targets on Android)
 - `z-index: 100` to sit above page content
+- Content area adds `padding-bottom: 88px` to prevent overlap
 
 ### Progress Bar Behaviour
 - The seek bar should update smoothly every 500ms from the Rust progress event
@@ -121,19 +179,20 @@ YouTube streams via `stream-download` may not support arbitrary seeking — the 
 
 ### Auth Error Flow
 If `player://auth-required` is emitted:
-- Display a non-blocking toast/snackbar at the top of the screen: "Authentication required. Please set up your credentials in Settings."
+- Display a non-blocking toast/snackbar at the top of the screen: *"Authentication required. Please set up your credentials in Settings."*
 - The Settings page is built in Sprint 4; for now, the toast is sufficient.
 
 ### Code Style (from CLAUDE.md)
 - Rust: use `tokio::sync::Mutex` for shared player state, `mpsc` channels for inter-thread communication
-- Conventional commits: `feat: add play_song tauri command`, `feat: build player bar component`
+- Conventional commits: `feat: add play_song tauri command`, `feat: build glassmorphism player bar`
 
 ---
 
 ## 4. Definition of Done
 
 - [ ] Clicking a song from search results starts audio playback
-- [ ] The Player Bar appears at the bottom with the song title, artist, and thumbnail
+- [ ] The Player Bar appears at the bottom with the song title, artist, and thumbnail — using full glassmorphism styling
+- [ ] The play button uses the iridescent gradient fill
 - [ ] The progress bar advances in real time
 - [ ] Play/Pause button toggles correctly
 - [ ] The app does not crash when a song ends naturally
@@ -162,11 +221,12 @@ npm run tauri dev
 
 # In the app:
 # 1. Search "Daft Punk Get Lucky" → results appear
-# 2. Click a result → Player Bar appears at bottom, audio plays
-# 3. Click Pause → audio pauses, button becomes Play
-# 4. Click Play → audio resumes
-# 5. Wait for song to end → Player Bar stays visible but is_playing = false
-# 6. Rename headers.json to headers.json.bak and restart → toast appears on play
+# 2. Click a result → glassmorphism Player Bar appears at bottom, audio plays
+# 3. The play button should show iridescent gradient; album art should have a violet glow ring
+# 4. Click Pause → audio pauses, button becomes Play
+# 5. Click Play → audio resumes
+# 6. Wait for song to end → Player Bar stays visible but is_playing = false
+# 7. Rename headers.json to headers.json.bak and restart → toast appears on play
 ```
 
 ### Known Issues / Notes for Sprint 3

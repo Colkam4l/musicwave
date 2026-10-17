@@ -58,13 +58,93 @@ The desktop app is packaged with **Tauri v2**. The same codebase will be compile
 *   **TypeScript:** Strict mode enabled. No `any` types. All Tauri command return shapes must have a matching TypeScript interface in `src/types/`.
 *   **Imports:** Absolute imports via `@/` alias (configured in `vite.config.ts` and `tsconfig.json`).
 
-### UI Styling
-*   **CSS variables only** — all colours, spacing, radii, and font sizes must be defined as CSS custom properties in `src/index.css`. No hardcoded hex values or magic numbers in component files.
-*   **Dark theme by default** — `--bg-primary: #0d0d0d`, `--bg-surface: #1a1a1a`, accent is a deep rose/music tone.
-*   **Font:** Inter (imported from Google Fonts).
-*   **Animations:** Use **Framer Motion** for page transitions and component mount/unmount animations. Keep durations under 200ms for interactive feedback.
-*   **Mobile:** Touch targets must be >= 44x44px. Use `env(safe-area-inset-bottom)` for bottom navigation on Android.
-*   **No Tailwind** — use CSS Modules or global CSS variables.
+### UI Styling — Design System
+
+#### Visual Direction: Hybrid Glassmorphism + Premium Dark
+The app uses a two-zone visual system:
+
+- **Content zone** (search results, song lists, pages): Deep dark surfaces with subtle hover lifts.
+- **Player bar** (persistent bottom shell): Full glassmorphism — `backdrop-filter: blur(28px)`, semi-transparent dark glass surface, thin luminous border.
+- **Overlays/Modals** (Sprint 3+): Glassmorphism matching the player bar.
+
+#### Accent: Iridescent Gradient
+The accent system shifts across `rose → violet → blue`. Never use a single flat accent colour — always use the gradient or a stop from it:
+```css
+--accent-gradient: linear-gradient(135deg, #e91e8c 0%, #7c3aed 50%, #3b82f6 100%);
+--accent-rose:   #e91e8c;
+--accent-violet: #7c3aed;
+--accent-blue:   #3b82f6;
+```
+
+This gradient is used on:
+- Play button fill and glow ring
+- Active/focused states (search bar focus, selected song row)
+- Progress bar fill
+- Album art glow ring in the player bar (Sprint 2)
+- Eventually reacts to dominant album art color (Sprint 4)
+
+#### Token Reference (must live in `src/index.css`)
+```css
+/* Backgrounds */
+--bg-primary:          #0d0d0d;   /* page background */
+--bg-surface:          #161616;   /* card / input surface */
+--bg-surface-hover:    #222222;   /* hovered card */
+--bg-surface-elevated: #282828;   /* dropdown / elevated card */
+--bg-glass:            rgba(18, 18, 18, 0.72); /* glassmorphism base */
+
+/* Borders */
+--border-subtle:  rgba(255, 255, 255, 0.08);
+--border-glass:   rgba(255, 255, 255, 0.13);
+--border-focus:   #7c3aed;  /* violet stop of accent gradient */
+
+/* Accents (always use gradient or a single stop — no custom hex) */
+--accent-gradient: linear-gradient(135deg, #e91e8c 0%, #7c3aed 50%, #3b82f6 100%);
+--accent-rose:   #e91e8c;
+--accent-violet: #7c3aed;
+--accent-blue:   #3b82f6;
+--accent-glow:   rgba(124, 58, 237, 0.32);  /* violet at 32% — used for box-shadow glow */
+
+/* Text */
+--text-primary:   #f5f5f7;
+--text-secondary: #a1a1aa;
+--text-muted:     #71717a;
+
+/* Typography */
+--font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+--font-size-xs:   0.75rem;
+--font-size-sm:   0.875rem;
+--font-size-base: 0.875rem;
+--font-size-md:   1rem;
+--font-size-lg:   1.25rem;
+--font-size-xl:   1.75rem;
+
+/* Radii */
+--radius-sm:   6px;
+--radius-md:   10px;
+--radius-lg:   16px;
+--radius-full: 9999px;
+
+/* Transitions */
+--transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
+--transition-normal: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+```
+
+#### Glassmorphism Recipe (for Player Bar + Modals)
+```css
+background: var(--bg-glass);
+backdrop-filter: blur(28px) saturate(180%);
+-webkit-backdrop-filter: blur(28px) saturate(180%);
+border-top: 1px solid var(--border-glass);
+box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.6);
+```
+
+#### Rules
+*   **CSS variables only** — no hardcoded hex values in component files. Every color must reference a CSS variable.
+*   **Font:** Inter (imported from Google Fonts) at 14px base.
+*   **Animations:** Use **Framer Motion** for page transitions and component mount/unmount (Sprint 4). Use CSS transitions for hover/focus states (150–220ms).
+*   **Mobile:** Touch targets ≥ 44×44px. Use `env(safe-area-inset-bottom)` for player bar padding on Android.
+*   **No Tailwind** — global CSS variables + scoped inline styles in component files.
+
 
 ---
 

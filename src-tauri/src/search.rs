@@ -80,7 +80,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_search_songs() {
-        let results = search_songs("Coldplay Yellow").await;
+        let results = search_songs("alibi banks").await;
         assert!(results.is_ok());
         let list = results.unwrap();
         assert!(!list.is_empty());

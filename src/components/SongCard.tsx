@@ -100,6 +100,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
           <img
             src={song.thumbnailUrl}
             alt={song.title}
+            referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
             style={{
               width: "100%",

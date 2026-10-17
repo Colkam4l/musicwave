@@ -45,6 +45,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({ song }) => {
           <img
             src={song.thumbnailUrl}
             alt={song.title}
+            referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
             style={{
               width: "100%",

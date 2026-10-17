@@ -4,7 +4,7 @@
 |---|---|
 | **Branch** | `feature/sprint-2-player-bar` |
 | **Depends On** | Sprint 1 complete and merged to `main` |
-| **Status** | ⏳ Not Started |
+| **Status** | ✅ Completed |
 | **Scope** | ~2 focused sessions |
 
 > **Related docs:** [CLAUDE.md](../CLAUDE.md) · [decisions.md](../decisions.md) · [SETUP.md](../SETUP.md) · [Sprint Index](./README.md)
@@ -61,21 +61,21 @@ src/
 ### 2.2 Tasks
 
 #### Rust Backend
-- [ ] **T2-1:** In `stream.rs`, implement `resolve_stream_url(video_id: &str, cookie: Option<String>, po_token: Option<String>) -> Result<String>` that uses `rusty_ytdl` + `load_auth_config()` to return a direct HTTP stream URL.
-- [ ] **T2-2:** In `audio.rs`, implement a global audio state manager using `tokio::sync::Mutex<Option<PlayerState>>` where `PlayerState` holds the active `rodio::Player` handle.
-- [ ] **T2-3:** Implement the following functions in `audio.rs`:
+- [x] **T2-1:** In `stream.rs`, implement `resolve_stream_url(video_id: &str, cookie: Option<String>, po_token: Option<String>) -> Result<String>` that uses `rusty_ytdl` + `load_auth_config()` to return a direct HTTP stream URL.
+- [x] **T2-2:** In `audio.rs`, implement a global audio state manager using `tokio::sync::Mutex<Option<PlayerState>>` where `PlayerState` holds the active `rodio::Player` handle.
+- [x] **T2-3:** Implement the following functions in `audio.rs`:
   - `play(stream_url: String, app_handle: AppHandle)` — starts playback, emits `player://progress` events every 500ms
   - `pause()` — pauses the active player
   - `resume()` — resumes the active player
   - `stop()` — stops and drops the active player
   - `seek(position_seconds: f64)` — seeks to position (if supported by the stream format)
-- [ ] **T2-4:** In `commands.rs`, wrap each audio function as a `#[tauri::command]`:
+- [x] **T2-4:** In `commands.rs`, wrap each audio function as a `#[tauri::command]`:
   - `play_song(video_id: String, app_handle: tauri::AppHandle)`
   - `pause_playback()`
   - `resume_playback()`
   - `stop_playback()`
   - `seek_to(position_seconds: f64)`
-- [ ] **T2-5:** Emit Tauri events from the `play` function on the Rust side:
+- [x] **T2-5:** Emit Tauri events from the `play` function on the Rust side:
   ```rust
   // Event name: "player://progress"
   // Payload: { elapsed_seconds: f64, total_seconds: f64, is_playing: bool }
@@ -87,7 +87,7 @@ src/
   ```
 
 #### Frontend
-- [ ] **T2-6:** Define `playerStore.ts` with Zustand state:
+- [x] **T2-6:** Define `playerStore.ts` with Zustand state:
   ```ts
   interface PlayerState {
     currentSong: Song | null;
@@ -97,17 +97,17 @@ src/
     volume: number; // 0.0–1.0
   }
   ```
-- [ ] **T2-7:** In `usePlayer.ts`, set up `listen('player://progress', ...)` and `listen('player://ended', ...)` from `@tauri-apps/api/event` to keep `playerStore` in sync.
-- [ ] **T2-8:** In `SongCard.tsx` (from Sprint 1), wire `onClick` to call `invoke('play_song', { videoId: song.videoId })` and update `playerStore.currentSong`.
-- [ ] **T2-9:** Build `NowPlaying.tsx` — shows the current song's thumbnail (40×40 with iridescent glow ring), title (truncated), and artist name. Only visible when `currentSong !== null`.
-- [ ] **T2-10:** Build `PlaybackControls.tsx` — play/pause toggle button (uses iridescent gradient fill when playing), previous and next buttons (stubs until Sprint 3 queue).
-- [ ] **T2-11:** Build `ProgressBar.tsx` — a range input styled as a seek bar using the iridescent gradient for the filled portion, showing `elapsedSeconds / totalSeconds`. Dragging calls `invoke('seek_to', { positionSeconds })`.
-- [ ] **T2-12:** Build `VolumeControl.tsx` — a range input (0–100). Changes call `invoke('set_volume', { volume })` (add this command in `commands.rs`).
-- [ ] **T2-13:** Assemble `PlayerBar.tsx` — `[NowPlaying] [PlaybackControls] [ProgressBar] [VolumeControl]` in a single row, fixed to the bottom of the window with **glassmorphism styling**.
-- [ ] **T2-14:** In `App.tsx`, render `<PlayerBar>` outside the router so it persists across all pages. Also add bottom padding (`padding-bottom: 88px`) to page content to prevent the player bar from overlapping content.
+- [x] **T2-7:** In `usePlayer.ts`, set up `listen('player://progress', ...)` and `listen('player://ended', ...)` from `@tauri-apps/api/event` to keep `playerStore` in sync.
+- [x] **T2-8:** In `SongCard.tsx` (from Sprint 1), wire `onClick` to call `invoke('play_song', { videoId: song.videoId })` and update `playerStore.currentSong`.
+- [x] **T2-9:** Build `NowPlaying.tsx` — shows the current song's thumbnail (40×40 with iridescent glow ring), title (truncated), and artist name. Only visible when `currentSong !== null`.
+- [x] **T2-10:** Build `PlaybackControls.tsx` — play/pause toggle button (uses iridescent gradient fill when playing), previous and next buttons (stubs until Sprint 3 queue).
+- [x] **T2-11:** Build `ProgressBar.tsx` — a range input styled as a seek bar using the iridescent gradient for the filled portion, showing `elapsedSeconds / totalSeconds`. Dragging calls `invoke('seek_to', { positionSeconds })`.
+- [x] **T2-12:** Build `VolumeControl.tsx` — a range input (0–100). Changes call `invoke('set_volume', { volume })` (add this command in `commands.rs`).
+- [x] **T2-13:** Assemble `PlayerBar.tsx` — `[NowPlaying] [PlaybackControls] [ProgressBar] [VolumeControl]` in a single row, fixed to the bottom of the window with **glassmorphism styling**.
+- [x] **T2-14:** In `App.tsx`, render `<PlayerBar>` outside the router so it persists across all pages. Also add bottom padding (`padding-bottom: 88px`) to page content to prevent the player bar from overlapping content.
 
 #### Auth Integration
-- [ ] **T2-15:** Before resolving the stream URL, `play_song` must call `load_auth_config()`. If no auth file is found, emit a `player://auth-required` event so the frontend can display a setup prompt.
+- [x] **T2-15:** Before resolving the stream URL, `play_song` must call `load_auth_config()`. If no auth file is found, emit a `player://auth-required` event so the frontend can display a setup prompt.
 
 ---
 
@@ -190,29 +190,41 @@ If `player://auth-required` is emitted:
 
 ## 4. Definition of Done
 
-- [ ] Clicking a song from search results starts audio playback
-- [ ] The Player Bar appears at the bottom with the song title, artist, and thumbnail — using full glassmorphism styling
-- [ ] The play button uses the iridescent gradient fill
-- [ ] The progress bar advances in real time
-- [ ] Play/Pause button toggles correctly
-- [ ] The app does not crash when a song ends naturally
-- [ ] If `headers.json` is missing, a toast message appears instead of a crash
-- [ ] `cargo clippy -- -D warnings` passes
-- [ ] `cargo fmt --check` passes
-- [ ] `npm run build` compiles with zero TypeScript errors
-- [ ] End-of-Sprint Report section below is filled in
+- [x] Clicking a song from search results starts audio playback
+- [x] The Player Bar appears at the bottom with the song title, artist, and thumbnail — using full glassmorphism styling
+- [x] The play button uses the iridescent gradient fill
+- [x] The progress bar advances in real time
+- [x] Play/Pause button toggles correctly
+- [x] The app does not crash when a song ends naturally
+- [x] If `headers.json` is missing, a toast message appears instead of a crash
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
+- [x] `npm run build` compiles with zero TypeScript errors
+- [x] End-of-Sprint Report section below is filled in
 
 ---
 
 ## 5. End-of-Sprint Report
 
-> ⚠️ **This section is filled in by the implementing agent after completion.**
-
 ### Date Completed
-_TBD_
+October 17, 2026
 
 ### What Was Built
-_Describe each file created and its role._
+- **`src-tauri/src/stream.rs`**: Updated `resolve_stream_url` to support optional cookies and po_token, returning the resolved HTTP stream URL, track duration in seconds, and configured reqwest playback client.
+- **`src-tauri/src/audio.rs`**: Built global audio state manager `AUDIO_STATE` (`tokio::sync::Mutex<Option<PlayerState>>`), with `play`, `pause`, `resume`, `stop`, `seek`, and `set_volume`. Configured background task ticking every 500ms emitting `player://progress` and emitting `player://ended` when playback finishes.
+- **`src-tauri/src/commands.rs`**: Added Tauri command handlers `play_song`, `pause_playback`, `resume_playback`, `stop_playback`, `seek_to`, `set_volume` with auth verification that emits `player://auth-required` when `headers.json` is missing.
+- **`src-tauri/src/lib.rs`**: Registered all audio and playback commands with Tauri builder.
+- **`src/index.css`**: Updated design tokens with iridescent gradient (`rose #e91e8c → violet #7c3aed → blue #3b82f6`) and glassmorphism recipe tokens.
+- **`src/store/playerStore.ts`**: Created Zustand store managing `currentSong`, `isPlaying`, `elapsedSeconds`, `totalSeconds`, `volume`, and `authRequiredToast`.
+- **`src/hooks/usePlayer.ts`**: Custom hook managing bidirectional IPC (`player://progress`, `player://ended`, `player://auth-required`) and playback control actions (`playSong`, `togglePlayPause`, `seekTo`, `changeVolume`).
+- **`src/components/NowPlaying.tsx`**: Left-side metadata component displaying 40×40 thumbnail wrapped in violet glow ring with truncated song title and artist.
+- **`src/components/PlaybackControls.tsx`**: Center playback controls featuring iridescent circular play/pause toggle (44×44px touch target) and stub previous/next buttons.
+- **`src/components/ProgressBar.tsx`**: Real-time scrubbing progress bar with iridescent gradient fill track, elapsed/total timestamps, and pointer capture drag handling.
+- **`src/components/VolumeControl.tsx`**: Volume control with mute/unmute toggle and interactive 0–100 slider.
+- **`src/components/PlayerBar.tsx`**: Bottom persistent glassmorphism container (`backdrop-filter: blur(28px) saturate(180%)`, height 80px, z-index 100).
+- **`src/components/AuthToast.tsx`**: Non-blocking toast notification displayed when YouTube auth credentials are required.
+- **`src/components/SongCard.tsx`**: Wired click event to invoke audio playback, added active playing indicator.
+- **`src/App.tsx`**: Rendered `<PlayerBar />` persistently outside routes, added `padding-bottom: 88px` on main layout.
 
 ### How to Test
 
@@ -222,7 +234,7 @@ npm run tauri dev
 # In the app:
 # 1. Search "Daft Punk Get Lucky" → results appear
 # 2. Click a result → glassmorphism Player Bar appears at bottom, audio plays
-# 3. The play button should show iridescent gradient; album art should have a violet glow ring
+# 3. The play button shows iridescent gradient; album art has a violet glow ring
 # 4. Click Pause → audio pauses, button becomes Play
 # 5. Click Play → audio resumes
 # 6. Wait for song to end → Player Bar stays visible but is_playing = false
@@ -230,4 +242,5 @@ npm run tauri dev
 ```
 
 ### Known Issues / Notes for Sprint 3
-_Any caveats or tech debt._
+- Seeking on live HTTP mp4 streams via `stream-download` is stubbed (`seek_to` no-op) per ADR and Sprint 2 plan; will be finalized in Sprint 4.
+- Previous and Next buttons are visual stubs ready to connect to the in-memory play queue in Sprint 3.

@@ -2,6 +2,7 @@ import React from "react";
 import { SearchBar } from "../components/SearchBar";
 import { SongList } from "../components/SongList";
 import { useSearch } from "../hooks/useSearch";
+import { usePlayer } from "../hooks/usePlayer";
 import { Song } from "../types/music";
 
 export const SearchPage: React.FC = () => {
@@ -14,10 +15,10 @@ export const SearchPage: React.FC = () => {
     search,
     clearSearch,
   } = useSearch();
+  const { playSong } = usePlayer();
 
   const handleSelectSong = (song: Song) => {
-    // In Sprint 1, song selection logs / toasts (Sprint 2 will wire audio playback)
-    console.log("Selected song for playback (Sprint 2):", song);
+    playSong(song);
   };
 
   return (

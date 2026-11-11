@@ -18,6 +18,9 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   onPrev,
   onNext,
 }) => {
+  const prevDisabled = disabled || !onPrev;
+  const nextDisabled = disabled || !onNext;
+
   return (
     <div
       style={{
@@ -30,7 +33,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       {/* Previous Song (Stub for Sprint 3 queue) */}
       <button
         type="button"
-        disabled={disabled}
+        disabled={prevDisabled}
         onClick={onPrev}
         title="Previous (Queue coming in Sprint 3)"
         style={{
@@ -39,23 +42,23 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           borderRadius: "50%",
           border: "none",
           background: "transparent",
-          color: disabled ? "var(--text-muted)" : "var(--text-secondary)",
+          color: prevDisabled ? "var(--text-muted)" : "var(--text-secondary)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: disabled ? "not-allowed" : "pointer",
+          cursor: prevDisabled ? "not-allowed" : "pointer",
           transition: "var(--transition-fast)",
           outline: "none",
-          opacity: disabled ? 0.4 : 1,
+          opacity: prevDisabled ? 0.4 : 1,
         }}
         onMouseEnter={(e) => {
-          if (!disabled) {
+          if (!prevDisabled) {
             e.currentTarget.style.color = "var(--text-primary)";
             e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
           }
         }}
         onMouseLeave={(e) => {
-          if (!disabled) {
+          if (!prevDisabled) {
             e.currentTarget.style.color = "var(--text-secondary)";
             e.currentTarget.style.background = "transparent";
           }
@@ -121,7 +124,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       {/* Next Song (Stub for Sprint 3 queue) */}
       <button
         type="button"
-        disabled={disabled}
+        disabled={nextDisabled}
         onClick={onNext}
         title="Next (Queue coming in Sprint 3)"
         style={{
@@ -130,23 +133,23 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           borderRadius: "50%",
           border: "none",
           background: "transparent",
-          color: disabled ? "var(--text-muted)" : "var(--text-secondary)",
+          color: nextDisabled ? "var(--text-muted)" : "var(--text-secondary)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: disabled ? "not-allowed" : "pointer",
+          cursor: nextDisabled ? "not-allowed" : "pointer",
           transition: "var(--transition-fast)",
           outline: "none",
-          opacity: disabled ? 0.4 : 1,
+          opacity: nextDisabled ? 0.4 : 1,
         }}
         onMouseEnter={(e) => {
-          if (!disabled) {
+          if (!nextDisabled) {
             e.currentTarget.style.color = "var(--text-primary)";
             e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
           }
         }}
         onMouseLeave={(e) => {
-          if (!disabled) {
+          if (!nextDisabled) {
             e.currentTarget.style.color = "var(--text-secondary)";
             e.currentTarget.style.background = "transparent";
           }

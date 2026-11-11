@@ -1,8 +1,38 @@
+use std::sync::LazyLock;
+
 use serde::{Deserialize, Serialize};
-use ytmapi_rs::YtMusic;
-use ytmapi_rs::common::YoutubeID;
+use serde_json::Value;
+use tokio::sync::Mutex;
+use ytmapi_rs::auth::noauth::NoAuthToken;
+use ytmapi_rs::json::from_json;
 use ytmapi_rs::query::SearchQuery;
 use ytmapi_rs::query::search::{FilteredSearch, SongsFilter};
+use ytmapi_rs::{Client as YtClient, YtMusic, YtMusicBuilder};
+
+static YT_SEARCH_CLIENT: LazyLock<Mutex<Option<YtMusic<NoAuthToken>>>> =
+    LazyLock::new(|| Mutex::new(None));
+
+async fn build_unauthenticated_client() -> anyhow::Result<YtMusic<NoAuthToken>> {
+    // Force HTTP/1.1 because YouTube Music resets HTTP/2 streams sent with ytmapi-rs's default UA.
+    let reqwest_client = reqwest::Client::builder().http1_only().build()?;
+    let yt_client = YtClient::new_from_reqwest_client(reqwest_client);
+    let yt = YtMusicBuilder::new_with_client(yt_client).build().await?;
+    Ok(yt)
+}
+
+async fn get_or_init_client() -> anyhow::Result<YtMusic<NoAuthToken>> {
+    let mut guard = YT_SEARCH_CLIENT.lock().await;
+    if let Some(yt) = guard.as_ref() {
+        return Ok(yt.clone());
+    }
+    let yt = build_unauthenticated_client().await?;
+    *guard = Some(yt.clone());
+    Ok(yt)
+}
+
+async fn reset_cached_client() {
+    *YT_SEARCH_CLIENT.lock().await = None;
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,36 +65,191 @@ fn parse_duration_to_seconds(duration: &str) -> Option<u32> {
     }
 }
 
-pub async fn search_songs(query: &str) -> anyhow::Result<Vec<SongResult>> {
-    let yt = YtMusic::new_unauthenticated().await?;
-    let search_query: SearchQuery<'_, FilteredSearch<SongsFilter>> = SearchQuery::from(query);
-    let songs = yt.query(search_query).await?;
-
-    let results = songs
-        .into_iter()
-        .map(|song| {
-            let duration_str = if song.duration.is_empty() {
-                None
-            } else {
-                Some(song.duration)
-            };
-            let duration_seconds = duration_str.as_deref().and_then(parse_duration_to_seconds);
-            let thumbnail_url = song.thumbnails.last().map(|t| t.url.clone());
-            let album = song.album.map(|a| a.name);
-
-            SongResult {
-                video_id: song.video_id.get_raw().to_string(),
-                title: song.title,
-                artist: song.artist,
-                album,
-                duration: duration_str,
-                duration_seconds,
-                thumbnail_url,
-            }
+fn extract_flex_column_text(flex_col: &Value) -> String {
+    flex_col
+        .pointer("/musicResponsiveListItemFlexColumnRenderer/text/runs")
+        .and_then(Value::as_array)
+        .map(|runs| {
+            runs.iter()
+                .filter_map(|r| r.get("text").and_then(Value::as_str))
+                .collect::<String>()
         })
+        .unwrap_or_default()
+}
+
+fn is_play_count_segment(segment: &str) -> bool {
+    let lower = segment.to_ascii_lowercase();
+    lower.ends_with(" plays")
+        || lower.ends_with(" play")
+        || lower.ends_with(" views")
+        || lower.ends_with(" view")
+}
+
+fn parse_subtitle_fields(subtitle: &str) -> (String, Option<String>, Option<String>, Option<u32>) {
+    let mut parts: Vec<&str> = subtitle
+        .split(" • ")
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
         .collect();
 
-    Ok(results)
+    if parts.len() >= 3 && matches!(parts[0], "Song" | "Video") {
+        parts.remove(0);
+    }
+
+    if parts.last().is_some_and(|last| is_play_count_segment(last)) {
+        parts.pop();
+    }
+
+    let (duration, duration_seconds) = match parts.last().copied() {
+        Some(last) if last.contains(':') => match parse_duration_to_seconds(last) {
+            Some(secs) => {
+                parts.pop();
+                (Some(last.to_string()), Some(secs))
+            }
+            None => (None, None),
+        },
+        _ => (None, None),
+    };
+
+    let artist = parts
+        .first()
+        .map(|s| (*s).to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "Unknown Artist".to_string());
+
+    let album = if parts.len() >= 2 {
+        parts.last().map(|s| (*s).to_string()).filter(|s| !s.is_empty())
+    } else {
+        None
+    };
+
+    (artist, album, duration, duration_seconds)
+}
+
+fn parse_song_item(item: &Value) -> Option<SongResult> {
+    let mrlir = item.get("musicResponsiveListItemRenderer")?;
+    let flex_cols = mrlir.get("flexColumns")?.as_array()?;
+
+    let title = flex_cols
+        .first()
+        .map(extract_flex_column_text)?
+        .trim()
+        .to_string();
+    if title.is_empty() {
+        return None;
+    }
+
+    let video_id = mrlir
+        .pointer("/playlistItemData/videoId")
+        .and_then(Value::as_str)
+        .or_else(|| {
+            flex_cols.first()?.pointer(
+                "/musicResponsiveListItemFlexColumnRenderer/text/runs/0/navigationEndpoint/watchEndpoint/videoId",
+            )
+            .and_then(Value::as_str)
+        })
+        .or_else(|| {
+            mrlir
+                .pointer("/overlay/musicItemThumbnailOverlayRenderer/content/musicPlayButtonRenderer/playNavigationEndpoint/watchEndpoint/videoId")
+                .and_then(Value::as_str)
+        })?
+        .trim()
+        .to_string();
+    if video_id.is_empty() {
+        return None;
+    }
+
+    let subtitle = flex_cols
+        .get(1)
+        .map(extract_flex_column_text)
+        .unwrap_or_default();
+    let (artist, album, duration, duration_seconds) = parse_subtitle_fields(&subtitle);
+
+    let thumbnail_url = mrlir
+        .pointer("/thumbnail/musicThumbnailRenderer/thumbnail/thumbnails")
+        .and_then(Value::as_array)
+        .and_then(|arr| arr.last())
+        .and_then(|t| t.get("url"))
+        .and_then(Value::as_str)
+        .map(ToString::to_string);
+
+    Some(SongResult {
+        video_id,
+        title,
+        artist,
+        album,
+        duration,
+        duration_seconds,
+        thumbnail_url,
+    })
+}
+
+fn find_section_list_contents(root: &Value) -> Option<&Vec<Value>> {
+    if let Some(tabs) = root
+        .pointer("/contents/tabbedSearchResultsRenderer/tabs")
+        .and_then(Value::as_array)
+    {
+        let selected_or_first = tabs
+            .iter()
+            .find(|t| {
+                t.pointer("/tabRenderer/selected")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false)
+            })
+            .or_else(|| tabs.first())?;
+
+        if let Some(arr) = selected_or_first
+            .pointer("/tabRenderer/content/sectionListRenderer/contents")
+            .and_then(Value::as_array)
+        {
+            return Some(arr);
+        }
+    }
+
+    root.pointer("/contents/sectionListRenderer/contents")
+        .and_then(Value::as_array)
+}
+
+/// Parses YouTube Music song search JSON tolerantly without failing the whole query on missing album links or extra subtitle fields.
+fn parse_songs_from_response(root: &Value) -> Vec<SongResult> {
+    let Some(sections) = find_section_list_contents(root) else {
+        return Vec::new();
+    };
+
+    let mut results = Vec::new();
+    for section in sections {
+        let Some(items) = section
+            .pointer("/musicShelfRenderer/contents")
+            .and_then(Value::as_array)
+        else {
+            continue;
+        };
+
+        for item in items {
+            if let Some(song) = parse_song_item(item) {
+                results.push(song);
+            }
+        }
+    }
+    results
+}
+
+pub async fn search_songs(query: &str) -> anyhow::Result<Vec<SongResult>> {
+    let yt = get_or_init_client().await?;
+    let search_query: SearchQuery<'_, FilteredSearch<SongsFilter>> = SearchQuery::from(query);
+    let json = match yt.json_query(search_query).await {
+        Ok(json) => json,
+        Err(_) => {
+            reset_cached_client().await;
+            let yt = get_or_init_client().await?;
+            let retry_query: SearchQuery<'_, FilteredSearch<SongsFilter>> =
+                SearchQuery::from(query);
+            yt.json_query(retry_query).await?
+        }
+    };
+
+    let root: Value = from_json(json)?;
+    Ok(parse_songs_from_response(&root))
 }
 
 #[cfg(test)]
@@ -78,14 +263,52 @@ mod tests {
         assert_eq!(parse_duration_to_seconds("45"), Some(45));
     }
 
+    #[test]
+    fn test_parse_subtitle_variants() {
+        assert_eq!(
+            parse_subtitle_fields("Dave & Burna Boy • PSYCHODRAMA • 4:02"),
+            (
+                "Dave & Burna Boy".to_string(),
+                Some("PSYCHODRAMA".to_string()),
+                Some("4:02".to_string()),
+                Some(242)
+            )
+        );
+        assert_eq!(
+            parse_subtitle_fields("Song • Khalid • American Teen • 3:40 • 1.2B plays"),
+            (
+                "Khalid".to_string(),
+                Some("American Teen".to_string()),
+                Some("3:40".to_string()),
+                Some(220)
+            )
+        );
+        assert_eq!(
+            parse_subtitle_fields("Artist Only • 2:15"),
+            (
+                "Artist Only".to_string(),
+                None,
+                Some("2:15".to_string()),
+                Some(135)
+            )
+        );
+    }
+
     #[tokio::test]
     async fn test_search_songs() {
         let results = search_songs("alibi banks").await;
-        assert!(results.is_ok());
+        assert!(results.is_ok(), "alibi banks search failed: {results:?}");
         let list = results.unwrap();
         assert!(!list.is_empty());
         let first = &list[0];
         assert!(!first.video_id.is_empty());
         assert!(!first.title.is_empty());
+
+        let loc_results = search_songs("location").await;
+        assert!(loc_results.is_ok(), "location search failed: {loc_results:?}");
+        let loc_list = loc_results.unwrap();
+        assert!(loc_list.len() >= 10, "expected >=10 results, got {}", loc_list.len());
+        assert!(!loc_list[0].video_id.is_empty());
+        assert!(!loc_list[0].artist.is_empty());
     }
 }

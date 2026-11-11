@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Music, Play, Pause, Disc, Clock } from "lucide-react";
 import { Song } from "../types/music";
 import { usePlayer } from "../hooks/usePlayer";
@@ -12,6 +12,10 @@ interface SongCardProps {
 export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [song.thumbnailUrl]);
   const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
 
   const isCurrentSong = currentSong?.videoId === song.videoId;

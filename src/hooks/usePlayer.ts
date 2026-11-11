@@ -13,6 +13,59 @@ interface ProgressPayload {
   isPlaying?: boolean;
 }
 
+export const usePlayerEvents = () => {
+  const { setIsPlaying, setIsBuffering, setProgress, setAuthRequiredToast } =
+    usePlayerStore();
+
+  useEffect(() => {
+    let cancelled = false;
+    const unlisteners: Array<() => void> = [];
+
+    const setupListeners = async () => {
+      const listeners = await Promise.all([
+        listen<ProgressPayload>("player://progress", (event) => {
+          const payload = event.payload;
+          const elapsed = payload.elapsed_seconds ?? payload.elapsedSeconds ?? 0;
+          const total = payload.total_seconds ?? payload.totalSeconds ?? 0;
+          const playing = payload.is_playing ?? payload.isPlaying;
+
+          if (typeof playing === "boolean") {
+            setIsPlaying(playing);
+            if (playing) {
+              setIsBuffering(false);
+            }
+          }
+          if (elapsed > 0) {
+            setIsBuffering(false);
+          }
+          setProgress(elapsed, total);
+        }),
+        listen("player://ended", () => {
+          setIsPlaying(false);
+          setIsBuffering(false);
+        }),
+        listen("player://auth-required", () => {
+          setAuthRequiredToast(true);
+          setIsBuffering(false);
+        }),
+      ]);
+
+      if (cancelled) {
+        listeners.forEach((unlisten) => unlisten());
+        return;
+      }
+      unlisteners.push(...listeners);
+    };
+
+    setupListeners();
+
+    return () => {
+      cancelled = true;
+      unlisteners.forEach((unlisten) => unlisten());
+    };
+  }, [setIsPlaying, setIsBuffering, setProgress, setAuthRequiredToast]);
+};
+
 export const usePlayer = () => {
   const {
     currentSong,
@@ -30,47 +83,6 @@ export const usePlayer = () => {
     setAuthRequiredToast,
   } = usePlayerStore();
 
-  useEffect(() => {
-    let unlistenProgress: (() => void) | undefined;
-    let unlistenEnded: (() => void) | undefined;
-    let unlistenAuthRequired: (() => void) | undefined;
-
-    const setupListeners = async () => {
-      unlistenProgress = await listen<ProgressPayload>("player://progress", (event) => {
-        const payload = event.payload;
-        const elapsed = payload.elapsed_seconds ?? payload.elapsedSeconds ?? 0;
-        const total = payload.total_seconds ?? payload.totalSeconds ?? 0;
-        const playing = payload.is_playing ?? payload.isPlaying;
-
-        if (typeof playing === "boolean") {
-          setIsPlaying(playing);
-        }
-        if (elapsed > 0) {
-          setIsBuffering(false);
-        }
-        setProgress(elapsed, total);
-      });
-
-      unlistenEnded = await listen("player://ended", () => {
-        setIsPlaying(false);
-        setIsBuffering(false);
-      });
-
-      unlistenAuthRequired = await listen("player://auth-required", () => {
-        setAuthRequiredToast(true);
-        setIsBuffering(false);
-      });
-    };
-
-    setupListeners();
-
-    return () => {
-      if (unlistenProgress) unlistenProgress();
-      if (unlistenEnded) unlistenEnded();
-      if (unlistenAuthRequired) unlistenAuthRequired();
-    };
-  }, [setIsPlaying, setIsBuffering, setProgress, setAuthRequiredToast]);
-
   const playSong = useCallback(
     async (song: Song) => {
       try {
@@ -80,9 +92,11 @@ export const usePlayer = () => {
         await invoke("play_song", { videoId: song.videoId });
       } catch (err) {
         console.error("Error playing song:", err);
-        // Ensure UI doesn't claim it's playing if an error occurred
-        setIsPlaying(false);
-        setIsBuffering(false);
+        // Only reset playback indicators if another song hasn't superseded this request.
+        if (usePlayerStore.getState().currentSong?.videoId === song.videoId) {
+          setIsPlaying(false);
+          setIsBuffering(false);
+        }
       }
     },
     [setCurrentSong, setIsPlaying, setIsBuffering]

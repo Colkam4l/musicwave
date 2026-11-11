@@ -3,8 +3,10 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SearchPage } from "./pages/SearchPage";
 import { PlayerBar } from "./components/PlayerBar";
 import { AuthToast } from "./components/AuthToast";
+import { usePlayerEvents } from "./hooks/usePlayer";
 
 export const App: React.FC = () => {
+  usePlayerEvents();
   return (
     <HashRouter>
       <AuthToast />

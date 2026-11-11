@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Music } from "lucide-react";
 import { Song } from "../types/music";
 
@@ -8,6 +8,10 @@ interface NowPlayingProps {
 
 export const NowPlaying: React.FC<NowPlayingProps> = ({ song }) => {
   const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [song?.thumbnailUrl]);
 
   if (!song) {
     return <div style={{ width: 220 }} />;

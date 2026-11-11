@@ -1,7 +1,7 @@
 use crate::search::SongResult;
 use crate::stream::{
     PlaybackCancel, PlaybackCancelledError, RangeStreamReader, ResolvedAudioStream, is_auth_error,
-    is_cancelled_error, resolve_audio_stream,
+    is_cancelled_error, resolve_audio_stream_with_app,
 };
 use rodio::{Decoder, DeviceSinkBuilder, MixerDeviceSink, Player};
 use serde::{Deserialize, Serialize};
@@ -29,6 +29,7 @@ struct AudioState {
     generation: u64,
     active_cancel: Option<PlaybackCancel>,
     engine: Option<AudioEngine>,
+    current_song: Option<SongResult>,
 }
 
 impl AudioState {
@@ -53,8 +54,47 @@ static AUDIO_STATE: LazyLock<Mutex<AudioState>> = LazyLock::new(|| {
         generation: 0,
         active_cancel: None,
         engine: None,
+        current_song: None,
     })
 });
+
+fn sync_integrations(song: Option<SongResult>, status: &'static str) {
+    #[cfg(all(target_os = "linux", feature = "mpris"))]
+    crate::mpris::notify_state_change(song.clone(), status);
+
+    #[cfg(desktop)]
+    crate::tray::update_state(song, status == "Playing");
+}
+
+/// Dequeues the next track and starts playing it, returning `true` if a track was queued.
+pub async fn skip_next_from_queue(app_handle: &AppHandle) -> bool {
+    let Some(next_song) = crate::queue::dequeue_front().await else {
+        return false;
+    };
+
+    let _ = app_handle.emit("player://track-changed", &next_song);
+    let handle_clone = app_handle.clone();
+    tokio::spawn(async move {
+        if let Err(err) = play_track(
+            next_song.video_id.clone(),
+            Some(next_song),
+            handle_clone.clone(),
+        )
+        .await
+            && !is_cancelled_error(&err)
+        {
+            if is_auth_error(&err) {
+                let _ = handle_clone.emit("player://auth-required", ());
+            } else {
+                let _ = handle_clone.emit("player://error", err.to_string());
+            }
+            let _ = handle_clone.emit("player://ended", ());
+            sync_integrations(None, "Stopped");
+        }
+    });
+
+    true
+}
 
 /// Stops any active or in-flight playback and starts a new cancellation session.
 pub async fn begin_playback_session() -> (u64, PlaybackCancel) {
@@ -92,28 +132,9 @@ fn spawn_progress_monitor(
                 };
                 let _ = app_handle.emit("player://progress", ended_payload);
 
-                if let Some(next_song) = crate::queue::dequeue_front().await {
-                    let _ = app_handle.emit("player://track-changed", &next_song);
-                    let handle_clone = app_handle.clone();
-                    tokio::spawn(async move {
-                        if let Err(err) = play_track(
-                            next_song.video_id.clone(),
-                            Some(next_song),
-                            handle_clone.clone(),
-                        )
-                        .await
-                            && !is_cancelled_error(&err)
-                        {
-                            if is_auth_error(&err) {
-                                let _ = handle_clone.emit("player://auth-required", ());
-                            } else {
-                                let _ = handle_clone.emit("player://error", err.to_string());
-                            }
-                            let _ = handle_clone.emit("player://ended", ());
-                        }
-                    });
-                } else {
+                if !skip_next_from_queue(&app_handle).await {
                     let _ = app_handle.emit("player://ended", ());
+                    sync_integrations(None, "Stopped");
                 }
                 break;
             }
@@ -223,8 +244,14 @@ pub async fn play_track(
     app_handle: AppHandle,
 ) -> anyhow::Result<()> {
     let (session_gen, cancel) = begin_playback_session().await;
-    let resolved = resolve_audio_stream(&video_id, &cancel).await?;
+    let resolved = resolve_audio_stream_with_app(&video_id, &cancel, Some(&app_handle)).await?;
     play_stream(resolved, session_gen, cancel, app_handle.clone()).await?;
+
+    {
+        let mut state = AUDIO_STATE.lock().await;
+        state.current_song = song.clone();
+    }
+    sync_integrations(song.clone(), "Playing");
 
     if let Some(song_meta) = song
         && let Ok(recents) = crate::library::add_to_recents(&app_handle, song_meta).await
@@ -235,28 +262,98 @@ pub async fn play_track(
     Ok(())
 }
 
+fn emit_progress_state(
+    app_handle: &AppHandle,
+    player: &Arc<Player>,
+    total_seconds: f64,
+    is_playing: bool,
+) {
+    let payload = ProgressPayload {
+        elapsed_seconds: player.get_pos().as_secs_f64(),
+        total_seconds,
+        is_playing,
+    };
+    let _ = app_handle.emit("player://progress", payload);
+}
+
+pub async fn pause_with_app(app_handle: Option<&AppHandle>) {
+    let song = {
+        let state = AUDIO_STATE.lock().await;
+        if let Some(ref engine) = state.engine
+            && let Some(ref p) = engine.player
+        {
+            p.pause();
+            if let Some(handle) = app_handle {
+                emit_progress_state(handle, p, engine.total_seconds, false);
+            }
+        }
+        state.current_song.clone()
+    };
+    sync_integrations(song, "Paused");
+}
+
 pub async fn pause() {
-    let state = AUDIO_STATE.lock().await;
-    if let Some(ref engine) = state.engine
-        && let Some(ref p) = engine.player
-    {
-        p.pause();
+    pause_with_app(None).await;
+}
+
+pub async fn resume_with_app(app_handle: Option<&AppHandle>) {
+    let (resumed, song) = {
+        let state = AUDIO_STATE.lock().await;
+        let mut resumed = false;
+        if let Some(ref engine) = state.engine
+            && let Some(ref p) = engine.player
+            && !p.empty()
+        {
+            p.play();
+            resumed = true;
+            if let Some(handle) = app_handle {
+                emit_progress_state(handle, p, engine.total_seconds, true);
+            }
+        }
+        (resumed, state.current_song.clone())
+    };
+    if resumed {
+        sync_integrations(song, "Playing");
     }
 }
 
 pub async fn resume() {
-    let state = AUDIO_STATE.lock().await;
-    if let Some(ref engine) = state.engine
-        && let Some(ref p) = engine.player
-    {
-        p.play();
+    resume_with_app(None).await;
+}
+
+pub async fn toggle_play_pause(app_handle: &AppHandle) {
+    let (should_resume, has_player) = {
+        let state = AUDIO_STATE.lock().await;
+        match state.engine.as_ref().and_then(|e| e.player.as_ref()) {
+            Some(p) if !p.empty() => (p.is_paused(), true),
+            _ => (false, false),
+        }
+    };
+
+    if has_player {
+        if should_resume {
+            resume_with_app(Some(app_handle)).await;
+        } else {
+            pause_with_app(Some(app_handle)).await;
+        }
     }
 }
 
+pub async fn stop_with_app(app_handle: Option<&AppHandle>) {
+    {
+        let mut state = AUDIO_STATE.lock().await;
+        state.generation += 1;
+        state.current_song = None;
+        state.stop_active_playback();
+    }
+    if let Some(handle) = app_handle {
+        let _ = handle.emit("player://ended", ());
+    }
+    sync_integrations(None, "Stopped");
+}
+
 pub async fn stop() {
-    let mut state = AUDIO_STATE.lock().await;
-    state.generation += 1;
-    state.stop_active_playback();
+    stop_with_app(None).await;
 }
 
 pub async fn seek(position_seconds: f64, app_handle: Option<AppHandle>) -> anyhow::Result<()> {

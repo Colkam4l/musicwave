@@ -2,6 +2,7 @@ use crate::audio;
 use crate::library;
 use crate::queue;
 use crate::search::{SongResult, search_songs as search_songs_impl};
+use crate::settings::{self, Settings};
 use crate::stream::{is_auth_error, is_cancelled_error};
 use tauri::{AppHandle, Emitter};
 
@@ -48,36 +49,36 @@ pub async fn play(
 }
 
 #[tauri::command]
-pub async fn pause_playback() -> Result<(), String> {
-    audio::pause().await;
+pub async fn pause_playback(app_handle: AppHandle) -> Result<(), String> {
+    audio::pause_with_app(Some(&app_handle)).await;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn pause() -> Result<(), String> {
-    pause_playback().await
+pub async fn pause(app_handle: AppHandle) -> Result<(), String> {
+    pause_playback(app_handle).await
 }
 
 #[tauri::command]
-pub async fn resume_playback() -> Result<(), String> {
-    audio::resume().await;
+pub async fn resume_playback(app_handle: AppHandle) -> Result<(), String> {
+    audio::resume_with_app(Some(&app_handle)).await;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn resume() -> Result<(), String> {
-    resume_playback().await
+pub async fn resume(app_handle: AppHandle) -> Result<(), String> {
+    resume_playback(app_handle).await
 }
 
 #[tauri::command]
-pub async fn stop_playback() -> Result<(), String> {
-    audio::stop().await;
+pub async fn stop_playback(app_handle: AppHandle) -> Result<(), String> {
+    audio::stop_with_app(Some(&app_handle)).await;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn stop() -> Result<(), String> {
-    stop_playback().await
+pub async fn stop(app_handle: AppHandle) -> Result<(), String> {
+    stop_playback(app_handle).await
 }
 
 #[tauri::command]
@@ -162,4 +163,14 @@ pub async fn get_recent_plays(app_handle: AppHandle) -> Result<Vec<SongResult>, 
     library::get_recent_plays(&app_handle)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_settings(app_handle: AppHandle) -> Result<Settings, String> {
+    settings::load_settings(&app_handle).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_settings(settings: Settings, app_handle: AppHandle) -> Result<Settings, String> {
+    settings::save_settings(&app_handle, settings).map_err(|e| e.to_string())
 }

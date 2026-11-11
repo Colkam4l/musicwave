@@ -14,9 +14,10 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 *   **Sprint 1 — Core Search UI:** Full YouTube Music search interface implemented with `SearchBar`, `SongList`, `SongCard`, `Spinner`, Zustand `searchStore`, `useSearch` hook, design system in `index.css`, React Router navigation in `App.tsx`, and backend metadata serialization (`videoId`, `title`, `artist`, `album`, `duration`, `durationSeconds`, `thumbnailUrl`).
 *   **Sprint 2 — Audio Playback & Player Bar:** Rust audio playback engine implemented with rodio + seekable HTTP range streaming (`play_track`, `pause`, `resume`, `stop`, `seek`, `set_volume`), real-time progress events (`player://progress`, `player://ended`, `player://auth-required`), and persistent bottom glassmorphism Player Bar.
 *   **Sprint 3 — Queue, Library & Navigation:** Implemented Rust `queue.rs` (200-cap `VecDeque` play queue with auto-advance and `player://track-changed`) and `library.rs` (atomic `library.json` persistence for liked songs and max-50 recent plays), sidebar + routing (`/`, `/library`, `/artist/:id`, `/settings`), slide-out `QueuePanel`, `LibraryPage`, `ArtistPage`, clickable artist links, like/queue actions on `SongCard`, wired Previous/Next controls, and global `<ToastContainer />` notifications.
+*   **Sprint 4 — Polish, Settings & Auth UX:** Implemented persistent `settings.rs` (`settings.json` with one-time legacy `headers.json` / `po_token.txt` migration and instant reload on playback), `SettingsPage` (auth credentials form, Test Connection, About + injected `__APP_VERSION__`), Linux `mpris.rs` (`zbus` D-Bus media player controls & metadata), `tray.rs` system tray icon + menu + close-to-tray, global keyboard shortcuts (`useKeyboardShortcuts` + `KeyboardShortcuts` modal), and Framer Motion transitions (`AnimatedLayout`, `SongCard` hover scale, `QueuePanel` slide-in).
 
 ### Active Sprint
-*   **Sprint 4 — Polish, Settings & Auth UX:** ⏳ Next to start.
+*   **Sprint 5 — Android Port (Tauri Mobile):** ⏳ Next to start.
 
 ### Sprints Overview
 | Sprint | Name | Status |
@@ -25,8 +26,8 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 | [1](./sprints/SPRINT-1.md) | Core Search UI | ✅ Complete |
 | [2](./sprints/SPRINT-2.md) | Audio Playback & Player Bar | ✅ Complete |
 | [3](./sprints/SPRINT-3.md) | Queue, Library & Navigation | ✅ Complete |
-| [4](./sprints/SPRINT-4.md) | Polish, Settings & Auth UX | ⏳ Next |
-| [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | ⏳ Not Started |
+| [4](./sprints/SPRINT-4.md) | Polish, Settings & Auth UX | ✅ Complete |
+| [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | ⏳ Next |
 
 ---
 
@@ -37,10 +38,15 @@ musicwave/
 ├── src-tauri/                   # Rust backend (Tauri app)
 │   ├── src/
 │   │   ├── main.rs              # Tauri app entry point
-│   │   ├── lib.rs               # Tauri builder and command registration
-│   │   ├── audio.rs             # Audio engine (rodio + stream-download)
+│   │   ├── lib.rs               # Tauri builder, tray/MPRIS setup & IPC registration
+│   │   ├── audio.rs             # Audio engine (rodio + HTTP range stream + tray/MPRIS sync)
+│   │   ├── library.rs           # Liked songs & recent plays atomic JSON persistence
+│   │   ├── mpris.rs             # Linux D-Bus MPRIS2 media keys & metadata (feature-gated)
+│   │   ├── queue.rs             # Play queue (200-cap VecDeque) & auto-advance helpers
 │   │   ├── search.rs            # YouTube Music search (ytmapi-rs) + unit tests
-│   │   ├── stream.rs            # Stream URL resolution (rusty_ytdl)
+│   │   ├── settings.rs          # Persistent auth settings + legacy migration + cache
+│   │   ├── stream.rs            # Stream URL resolution (rusty_ytdl) + HTTP range reader
+│   │   ├── tray.rs              # Desktop system tray icon, menu & close-to-tray handler
 │   │   └── commands.rs          # All #[tauri::command] functions (IPC bridge)
 │   ├── Cargo.toml               # Tauri backend dependencies
 │   ├── tauri.conf.json          # Tauri application configuration
@@ -110,7 +116,8 @@ musicwave/
 ### Frontend
 *   **Tauri v2:** Desktop app shell and IPC bridge (`@tauri-apps/api`, `@tauri-apps/plugin-opener`).
 *   **React 19 + TypeScript + Vite:** Frontend framework and bundler.
-*   **Zustand:** Lightweight global state management for search.
+*   **Framer Motion:** Route transitions, card hover animations, and slide-in queue drawer.
+*   **Zustand:** Lightweight global state management (`searchStore`, `playerStore`, `queueStore`, `libraryStore`, `toastStore`).
 *   **React Router DOM:** Client-side routing.
 *   **Lucide React:** Icons.
 

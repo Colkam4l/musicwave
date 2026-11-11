@@ -1,4 +1,5 @@
 import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowUp, ListMusic, Music, Trash2, X } from "lucide-react";
 import { useQueue } from "../hooks/useQueue";
 import { usePlayer } from "../hooks/usePlayer";
@@ -21,28 +22,30 @@ export const QueuePanel: React.FC = () => {
   };
 
   return (
-    <aside
-      aria-hidden={!isQueueOpen}
-      style={{
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 80,
-        width: 350,
-        maxWidth: "90vw",
-        zIndex: 90,
-        background: "var(--bg-glass)",
-        backdropFilter: "blur(28px) saturate(180%)",
-        WebkitBackdropFilter: "blur(28px) saturate(180%)",
-        borderLeft: "1px solid var(--border-glass)",
-        boxShadow: "-8px 0 32px rgba(0, 0, 0, 0.55)",
-        transform: isQueueOpen ? "translateX(0)" : "translateX(100%)",
-        transition: "transform var(--transition-normal)",
-        display: "flex",
-        flexDirection: "column",
-        pointerEvents: isQueueOpen ? "auto" : "none",
-      }}
-    >
+    <AnimatePresence>
+      {isQueueOpen && (
+        <motion.aside
+          initial={{ x: "100%", opacity: 0.92 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: "100%", opacity: 0.92 }}
+          transition={{ type: "spring", stiffness: 360, damping: 34 }}
+          style={{
+            position: "fixed",
+            top: 0,
+            right: 0,
+            bottom: 80,
+            width: 350,
+            maxWidth: "90vw",
+            zIndex: 90,
+            background: "var(--bg-glass)",
+            backdropFilter: "blur(28px) saturate(180%)",
+            WebkitBackdropFilter: "blur(28px) saturate(180%)",
+            borderLeft: "1px solid var(--border-glass)",
+            boxShadow: "-8px 0 32px rgba(0, 0, 0, 0.55)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
       {/* Header */}
       <div
         style={{
@@ -376,7 +379,9 @@ export const QueuePanel: React.FC = () => {
           </div>
         )}
       </div>
-    </aside>
+        </motion.aside>
+      )}
+    </AnimatePresence>
   );
 };
 

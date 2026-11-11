@@ -74,6 +74,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         />
 
         <input
+          id="musicwave-search-input"
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}

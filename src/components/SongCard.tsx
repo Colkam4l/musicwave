@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Clock, Disc, Heart, Music, Pause, Play, Plus } from "lucide-react";
 import { Song } from "../types/music";
 import { usePlayer } from "../hooks/usePlayer";
@@ -38,7 +39,9 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
   };
 
   return (
-    <div
+    <motion.div
+      whileHover={{ scale: 1.01 }}
+      transition={{ duration: 0.14, ease: "easeOut" }}
       onClick={handleClick}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -65,8 +68,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
             ? "var(--bg-surface-hover)"
             : "transparent",
         cursor: "pointer",
-        transition: "var(--transition-fast)",
-        transform: isHovered ? "translateY(-1px)" : "none",
+        transition: "background var(--transition-fast), border-color var(--transition-fast)",
         outline: "none",
         border: isCurrentSong
           ? "1px solid rgba(124, 58, 237, 0.28)"
@@ -296,6 +298,6 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
         <Clock size={12} style={{ opacity: 0.6 }} />
         <span>{song.duration ?? "--:--"}</span>
       </div>
-    </div>
+    </motion.div>
   );
 };

@@ -1,6 +1,5 @@
 use reqwest::StatusCode;
 use reqwest::header::{CONTENT_RANGE, HeaderMap, HeaderValue, RANGE, USER_AGENT};
-use serde::Deserialize;
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::io::{self, Read, Seek, SeekFrom};
@@ -98,49 +97,8 @@ pub fn is_auth_error(err: &anyhow::Error) -> bool {
         || msg.contains("login_required")
 }
 
-#[derive(Deserialize)]
-struct HeadersConfig {
-    #[serde(rename = "User-Agent")]
-    user_agent: Option<String>,
-    #[serde(rename = "Cookie")]
-    cookie: Option<String>,
-}
-
-fn read_file_multi_path(filename: &str) -> Option<String> {
-    for path in [
-        filename.to_string(),
-        format!("../{}", filename),
-        format!("src-tauri/{}", filename),
-    ] {
-        if let Ok(content) = std::fs::read_to_string(&path) {
-            return Some(content);
-        }
-    }
-    None
-}
-
 pub fn load_auth_config() -> (Option<String>, Option<String>, Option<String>) {
-    let mut cookie = None;
-    let mut user_agent = None;
-    let mut po_token = None;
-
-    // Try loading headers.json
-    if let Some(content) = read_file_multi_path("headers.json")
-        && let Ok(config) = serde_json::from_str::<HeadersConfig>(&content)
-    {
-        cookie = config.cookie;
-        user_agent = config.user_agent;
-    }
-
-    // Try loading po_token.txt
-    if let Some(content) = read_file_multi_path("po_token.txt") {
-        let trimmed = content.trim().to_string();
-        if !trimmed.is_empty() {
-            po_token = Some(trimmed);
-        }
-    }
-
-    (cookie, user_agent, po_token)
+    crate::settings::active_auth_tuple(None)
 }
 
 pub struct ResolvedAudioStream {
@@ -192,6 +150,14 @@ pub async fn resolve_audio_stream(
     video_id: &str,
     cancel: &PlaybackCancel,
 ) -> anyhow::Result<ResolvedAudioStream> {
+    resolve_audio_stream_with_app(video_id, cancel, None).await
+}
+
+pub async fn resolve_audio_stream_with_app(
+    video_id: &str,
+    cancel: &PlaybackCancel,
+    app_handle: Option<&tauri::AppHandle>,
+) -> anyhow::Result<ResolvedAudioStream> {
     if cancel.is_cancelled() {
         return Err(PlaybackCancelledError.into());
     }
@@ -201,7 +167,7 @@ pub async fn resolve_audio_stream(
         video_id
     );
     let video_url = format!("https://www.youtube.com/watch?v={}", video_id);
-    let (auth_cookie, user_agent, auth_po_token) = load_auth_config();
+    let (auth_cookie, user_agent, auth_po_token) = crate::settings::active_auth_tuple(app_handle);
     let ua_string = user_agent.unwrap_or_else(|| DEFAULT_UA.to_string());
 
     let mut headers = HeaderMap::new();

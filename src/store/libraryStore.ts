@@ -18,3 +18,4 @@ export const useLibraryStore = create<LibraryState>((set) => ({
   setRecentPlays: (recentPlays) => set({ recentPlays }),
   setLoading: (isLoading) => set({ isLoading }),
 }));
+

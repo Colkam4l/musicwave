@@ -379,3 +379,4 @@ export const QueuePanel: React.FC = () => {
     </aside>
   );
 };
+

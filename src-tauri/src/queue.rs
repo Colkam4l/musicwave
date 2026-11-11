@@ -117,3 +117,4 @@ mod tests {
         assert!(clear_queue().await.is_empty());
     }
 }
+

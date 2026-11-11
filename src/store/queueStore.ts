@@ -39,3 +39,4 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   setQueueOpen: (isQueueOpen) => set({ isQueueOpen }),
   toggleQueueOpen: () => set((state) => ({ isQueueOpen: !state.isQueueOpen })),
 }));
+

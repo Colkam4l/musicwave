@@ -169,6 +169,9 @@ src-tauri/src/
 
 ## 5. Git & Branching Strategy
 
+*   **Sprint Workflow:**
+    *   Every sprint MUST be started on a new branch created from `main` (`feature/sprint-<number>-<description>`) and pushed to GitHub.
+    *   At the end of each sprint, all sprint changes, the End-of-Sprint Report, and `current-state.md` updates MUST be committed and pushed to GitHub on that branch (`git push -u origin feature/sprint-<number>-<description>`).
 *   **Branch Naming:**
     *   `feature/sprint-<number>-<description>` for sprint tasks.
     *   `bugfix/<issue-id>-<description>` for bug fixes.

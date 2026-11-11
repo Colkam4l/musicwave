@@ -43,7 +43,7 @@ pub fn setup_tray(app_handle: &AppHandle) -> tauri::Result<()> {
     let now_playing = MenuItem::with_id(
         app_handle,
         MENU_NOW_PLAYING,
-        "Now Playing: Idle",
+        "Now Playing: Nothing Playing",
         false,
         None::<&str>,
     )?;
@@ -130,13 +130,14 @@ pub fn update_state(song: Option<SongResult>, is_playing: bool) {
         return;
     };
 
-    let now_playing_label = song.map(|s| format!("Now Playing: {} - {}", s.artist, s.title));
+    let now_playing_label = match song {
+        Some(s) => format!("Now Playing: {} - {}", s.artist, s.title),
+        None => "Now Playing: Nothing Playing".to_string(),
+    };
     let play_label = if is_playing { "Pause" } else { "Play" };
 
     tauri::async_runtime::spawn_blocking(move || {
-        if let Some(label) = now_playing_label {
-            let _ = handles.now_playing.set_text(label);
-        }
+        let _ = handles.now_playing.set_text(now_playing_label);
         let _ = handles.play_pause.set_text(play_label);
     });
 }

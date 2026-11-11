@@ -244,6 +244,9 @@ pub async fn play_track(
     app_handle: AppHandle,
 ) -> anyhow::Result<()> {
     let (session_gen, cancel) = begin_playback_session().await;
+    if song.is_some() {
+        sync_integrations(song.clone(), "Playing");
+    }
     let resolved = resolve_audio_stream_with_app(&video_id, &cancel, Some(&app_handle)).await?;
     play_stream(resolved, session_gen, cancel, app_handle.clone()).await?;
 

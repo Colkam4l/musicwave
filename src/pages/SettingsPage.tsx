@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   Settings as SettingsIcon,
   KeyRound,
@@ -400,6 +401,18 @@ export const SettingsPage: React.FC = () => {
               href="https://github.com/Colkam4l/musicwave"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault();
+                void openUrl("https://github.com/Colkam4l/musicwave").catch(
+                  () => {
+                    window.open(
+                      "https://github.com/Colkam4l/musicwave",
+                      "_blank",
+                      "noopener,noreferrer"
+                    );
+                  }
+                );
+              }}
               style={{
                 display: "inline-flex",
                 alignItems: "center",

@@ -5,6 +5,8 @@ interface PlaybackControlsProps {
   isPlaying: boolean;
   isBuffering?: boolean;
   disabled?: boolean;
+  disablePrev?: boolean;
+  disableNext?: boolean;
   onTogglePlayPause: () => void;
   onPrev?: () => void;
   onNext?: () => void;
@@ -14,12 +16,14 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   isPlaying,
   isBuffering = false,
   disabled = false,
+  disablePrev = false,
+  disableNext = false,
   onTogglePlayPause,
   onPrev,
   onNext,
 }) => {
-  const prevDisabled = disabled || !onPrev;
-  const nextDisabled = disabled || !onNext;
+  const prevDisabled = disabled || disablePrev || !onPrev;
+  const nextDisabled = disabled || disableNext || !onNext;
 
   return (
     <div
@@ -30,12 +34,12 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         flexShrink: 0,
       }}
     >
-      {/* Previous Song (Stub for Sprint 3 queue) */}
+      {/* Previous Song */}
       <button
         type="button"
         disabled={prevDisabled}
         onClick={onPrev}
-        title="Previous (Queue coming in Sprint 3)"
+        title="Previous"
         style={{
           width: 44,
           height: 44,
@@ -121,12 +125,12 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         )}
       </button>
 
-      {/* Next Song (Stub for Sprint 3 queue) */}
+      {/* Next Song */}
       <button
         type="button"
         disabled={nextDisabled}
         onClick={onNext}
-        title="Next (Queue coming in Sprint 3)"
+        title="Next"
         style={{
           width: 44,
           height: 44,

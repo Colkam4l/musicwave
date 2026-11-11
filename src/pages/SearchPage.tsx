@@ -26,8 +26,8 @@ export const SearchPage: React.FC = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-        minHeight: "100vh",
-        padding: "2rem 1.5rem 4rem 1.5rem",
+        minHeight: "100%",
+        padding: "2rem 1.5rem 2.5rem 1.5rem",
       }}
     >
       {/* Search Header */}

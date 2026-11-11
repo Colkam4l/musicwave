@@ -2,6 +2,8 @@ import { useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { usePlayerStore } from "../store/playerStore";
+import { useQueueStore } from "../store/queueStore";
+import { useToastStore } from "../store/toastStore";
 import { Song } from "../types/music";
 
 interface ProgressPayload {
@@ -14,7 +16,7 @@ interface ProgressPayload {
 }
 
 export const usePlayerEvents = () => {
-  const { setIsPlaying, setIsBuffering, setProgress, setAuthRequiredToast } =
+  const { setCurrentSong, setIsPlaying, setIsBuffering, setProgress } =
     usePlayerStore();
 
   useEffect(() => {
@@ -45,8 +47,32 @@ export const usePlayerEvents = () => {
           setIsBuffering(false);
         }),
         listen("player://auth-required", () => {
-          setAuthRequiredToast(true);
+          useToastStore
+            .getState()
+            .addToast(
+              "Authentication required. Please set up your credentials in Settings.",
+              "warning",
+              6000
+            );
           setIsBuffering(false);
+        }),
+        listen<string>("player://error", (event) => {
+          if (event.payload) {
+            useToastStore.getState().addToast(event.payload, "error", 5000);
+          }
+        }),
+        listen<Song>("player://track-changed", (event) => {
+          const nextSong = event.payload;
+          const prevSong = usePlayerStore.getState().currentSong;
+          if (prevSong && prevSong.videoId !== nextSong.videoId) {
+            useQueueStore.getState().pushHistory(prevSong);
+          }
+          setCurrentSong(nextSong);
+          setIsPlaying(true);
+          setIsBuffering(true);
+          invoke<Song[]>("get_queue")
+            .then((q) => useQueueStore.getState().setQueue(q))
+            .catch(() => {});
         }),
       ]);
 
@@ -63,7 +89,7 @@ export const usePlayerEvents = () => {
       cancelled = true;
       unlisteners.forEach((unlisten) => unlisten());
     };
-  }, [setIsPlaying, setIsBuffering, setProgress, setAuthRequiredToast]);
+  }, [setCurrentSong, setIsPlaying, setIsBuffering, setProgress]);
 };
 
 export const usePlayer = () => {
@@ -74,24 +100,35 @@ export const usePlayer = () => {
     elapsedSeconds,
     totalSeconds,
     volume,
-    authRequiredToast,
     setCurrentSong,
     setIsPlaying,
     setIsBuffering,
     setProgress,
     setVolume,
-    setAuthRequiredToast,
   } = usePlayerStore();
 
   const playSong = useCallback(
-    async (song: Song) => {
+    async (song: Song, options?: { recordHistory?: boolean }) => {
+      const recordHistory = options?.recordHistory ?? true;
+      const prevSong = usePlayerStore.getState().currentSong;
+      if (recordHistory && prevSong && prevSong.videoId !== song.videoId) {
+        useQueueStore.getState().pushHistory(prevSong);
+      }
+
       try {
         setCurrentSong(song);
         setIsPlaying(true);
         setIsBuffering(true);
-        await invoke("play_song", { videoId: song.videoId });
+        await invoke("play_song", { videoId: song.videoId, song });
       } catch (err) {
+        const msg =
+          typeof err === "string"
+            ? err
+            : err instanceof Error
+            ? err.message
+            : "Failed to play song";
         console.error("Error playing song:", err);
+        useToastStore.getState().addToast(msg, "error");
         // Only reset playback indicators if another song hasn't superseded this request.
         if (usePlayerStore.getState().currentSong?.videoId === song.videoId) {
           setIsPlaying(false);
@@ -150,8 +187,6 @@ export const usePlayer = () => {
     elapsedSeconds,
     totalSeconds,
     volume,
-    authRequiredToast,
-    setAuthRequiredToast,
     playSong,
     togglePlayPause,
     seekTo,

@@ -1,6 +1,8 @@
 use crate::audio;
+use crate::library;
+use crate::queue;
 use crate::search::{SongResult, search_songs as search_songs_impl};
-use crate::stream::{is_auth_error, is_cancelled_error, resolve_audio_stream};
+use crate::stream::{is_auth_error, is_cancelled_error};
 use tauri::{AppHandle, Emitter};
 
 #[tauri::command]
@@ -19,21 +21,12 @@ pub async fn search(query: String) -> Result<Vec<SongResult>, String> {
 }
 
 #[tauri::command]
-pub async fn play_song(video_id: String, app_handle: AppHandle) -> Result<(), String> {
-    let (session_gen, cancel) = audio::begin_playback_session().await;
-
-    let resolved = match resolve_audio_stream(&video_id, &cancel).await {
-        Ok(stream) => stream,
-        Err(e) if is_cancelled_error(&e) => return Ok(()),
-        Err(e) => {
-            if is_auth_error(&e) {
-                let _ = app_handle.emit("player://auth-required", ());
-            }
-            return Err(format!("Failed to resolve song stream: {e}"));
-        }
-    };
-
-    match audio::play_stream(resolved, session_gen, cancel, app_handle.clone()).await {
+pub async fn play_song(
+    video_id: String,
+    song: Option<SongResult>,
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    match audio::play_track(video_id, song, app_handle.clone()).await {
         Ok(()) => Ok(()),
         Err(e) if is_cancelled_error(&e) => Ok(()),
         Err(e) => {
@@ -46,8 +39,12 @@ pub async fn play_song(video_id: String, app_handle: AppHandle) -> Result<(), St
 }
 
 #[tauri::command]
-pub async fn play(video_id: String, app_handle: AppHandle) -> Result<(), String> {
-    play_song(video_id, app_handle).await
+pub async fn play(
+    video_id: String,
+    song: Option<SongResult>,
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    play_song(video_id, song, app_handle).await
 }
 
 #[tauri::command]
@@ -99,4 +96,70 @@ pub async fn set_volume(volume: f64) -> Result<(), String> {
     };
     audio::set_volume(vol).await;
     Ok(())
+}
+
+#[tauri::command]
+pub async fn enqueue_next(song: SongResult) -> Result<Vec<SongResult>, String> {
+    queue::enqueue_next(song).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn enqueue_last(song: SongResult) -> Result<Vec<SongResult>, String> {
+    queue::enqueue_last(song).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn dequeue_front() -> Result<Option<SongResult>, String> {
+    Ok(queue::dequeue_front().await)
+}
+
+#[tauri::command]
+pub async fn remove_from_queue(index: usize) -> Result<Vec<SongResult>, String> {
+    Ok(queue::remove_at(index).await)
+}
+
+#[tauri::command]
+pub async fn reorder_queue(from: usize, to: usize) -> Result<Vec<SongResult>, String> {
+    Ok(queue::reorder(from, to).await)
+}
+
+#[tauri::command]
+pub async fn clear_queue() -> Result<Vec<SongResult>, String> {
+    Ok(queue::clear_queue().await)
+}
+
+#[tauri::command]
+pub async fn get_queue() -> Result<Vec<SongResult>, String> {
+    Ok(queue::get_queue().await)
+}
+
+#[tauri::command]
+pub async fn like_song(song: SongResult, app_handle: AppHandle) -> Result<Vec<SongResult>, String> {
+    library::like_song(&app_handle, song)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn unlike_song(
+    video_id: String,
+    app_handle: AppHandle,
+) -> Result<Vec<SongResult>, String> {
+    library::unlike_song(&app_handle, &video_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_liked_songs(app_handle: AppHandle) -> Result<Vec<SongResult>, String> {
+    library::get_liked_songs(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_recent_plays(app_handle: AppHandle) -> Result<Vec<SongResult>, String> {
+    library::get_recent_plays(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
 }

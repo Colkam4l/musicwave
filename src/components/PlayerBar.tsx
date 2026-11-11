@@ -1,9 +1,11 @@
 import React from "react";
+import { ListMusic } from "lucide-react";
 import { NowPlaying } from "./NowPlaying";
 import { PlaybackControls } from "./PlaybackControls";
 import { ProgressBar } from "./ProgressBar";
 import { VolumeControl } from "./VolumeControl";
 import { usePlayer } from "../hooks/usePlayer";
+import { useQueue } from "../hooks/useQueue";
 
 export const PlayerBar: React.FC = () => {
   const {
@@ -17,6 +19,15 @@ export const PlayerBar: React.FC = () => {
     seekTo,
     changeVolume,
   } = usePlayer();
+  const {
+    queue,
+    isQueueOpen,
+    canSkipPrev,
+    canSkipNext,
+    toggleQueueOpen,
+    skipPrev,
+    skipNext,
+  } = useQueue();
 
   return (
     <footer
@@ -49,7 +60,11 @@ export const PlayerBar: React.FC = () => {
         isPlaying={isPlaying}
         isBuffering={isBuffering}
         disabled={!currentSong}
+        disablePrev={!canSkipPrev}
+        disableNext={!canSkipNext}
         onTogglePlayPause={togglePlayPause}
+        onPrev={skipPrev}
+        onNext={skipNext}
       />
 
       {/* Center Right: Scrubable Progress Bar */}
@@ -60,11 +75,54 @@ export const PlayerBar: React.FC = () => {
         disabled={!currentSong}
       />
 
-      {/* Right: Volume Control */}
-      <VolumeControl
-        volume={volume}
-        onVolumeChange={changeVolume}
-      />
+      {/* Right: Queue Toggle & Volume Control */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={toggleQueueOpen}
+          title="Toggle Queue"
+          style={{
+            position: "relative",
+            width: 38,
+            height: 38,
+            borderRadius: "var(--radius-sm)",
+            border: "none",
+            background: isQueueOpen ? "rgba(124, 58, 237, 0.2)" : "transparent",
+            color: isQueueOpen ? "var(--accent-rose)" : "var(--text-secondary)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "var(--transition-fast)",
+          }}
+        >
+          <ListMusic size={18} />
+          {queue.length > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                top: 3,
+                right: 3,
+                minWidth: 15,
+                height: 15,
+                padding: "0 4px",
+                borderRadius: "var(--radius-full)",
+                background: "var(--accent-violet)",
+                color: "#ffffff",
+                fontSize: "0.6rem",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {queue.length}
+            </span>
+          )}
+        </button>
+
+        <VolumeControl volume={volume} onVolumeChange={changeVolume} />
+      </div>
     </footer>
   );
 };

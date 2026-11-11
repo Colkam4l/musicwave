@@ -12,10 +12,11 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 *   **CLI Audio Engine (Pre-Sprint 0):** YouTube Music search, YouTube signature cipher bypass, HTTP stream buffering, and CLI audio playback verified in Rust.
 *   **Sprint 0 — Tauri Project Scaffolding:** Tauri v2 project initialized, Rust audio engine refactored into modular crates (`audio.rs`, `search.rs`, `stream.rs`, `commands.rs`), React + TypeScript + Vite frontend configured, IPC commands registered, and build verified.
 *   **Sprint 1 — Core Search UI:** Full YouTube Music search interface implemented with `SearchBar`, `SongList`, `SongCard`, `Spinner`, Zustand `searchStore`, `useSearch` hook, design system in `index.css`, React Router navigation in `App.tsx`, and backend metadata serialization (`videoId`, `title`, `artist`, `album`, `duration`, `durationSeconds`, `thumbnailUrl`).
-*   **Sprint 2 — Audio Playback & Player Bar:** Rust audio playback engine implemented with rodio + reqwest buffer (`play`, `pause`, `resume`, `stop`, `seek`, `set_volume`), real-time progress events (`player://progress`, `player://ended`, `player://auth-required`), persistent bottom glassmorphism Player Bar with album art glow ring, iridescent play/pause toggle button, scrubable progress bar, volume control, and non-blocking auth toast.
+*   **Sprint 2 — Audio Playback & Player Bar:** Rust audio playback engine implemented with rodio + seekable HTTP range streaming (`play_track`, `pause`, `resume`, `stop`, `seek`, `set_volume`), real-time progress events (`player://progress`, `player://ended`, `player://auth-required`), and persistent bottom glassmorphism Player Bar.
+*   **Sprint 3 — Queue, Library & Navigation:** Implemented Rust `queue.rs` (200-cap `VecDeque` play queue with auto-advance and `player://track-changed`) and `library.rs` (atomic `library.json` persistence for liked songs and max-50 recent plays), sidebar + routing (`/`, `/library`, `/artist/:id`, `/settings`), slide-out `QueuePanel`, `LibraryPage`, `ArtistPage`, clickable artist links, like/queue actions on `SongCard`, wired Previous/Next controls, and global `<ToastContainer />` notifications.
 
 ### Active Sprint
-*   **Sprint 3 — Queue, Library & Navigation:** ⏳ Next to start.
+*   **Sprint 4 — Polish, Settings & Auth UX:** ⏳ Next to start.
 
 ### Sprints Overview
 | Sprint | Name | Status |
@@ -23,8 +24,8 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 | [0](./sprints/SPRINT-0.md) | Tauri Project Scaffolding | ✅ Complete |
 | [1](./sprints/SPRINT-1.md) | Core Search UI | ✅ Complete |
 | [2](./sprints/SPRINT-2.md) | Audio Playback & Player Bar | ✅ Complete |
-| [3](./sprints/SPRINT-3.md) | Queue, Library & Navigation | ⏳ Next |
-| [4](./sprints/SPRINT-4.md) | Polish, Settings & Auth UX | ⏳ Not Started |
+| [3](./sprints/SPRINT-3.md) | Queue, Library & Navigation | ✅ Complete |
+| [4](./sprints/SPRINT-4.md) | Polish, Settings & Auth UX | ⏳ Next |
 | [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | ⏳ Not Started |
 
 ---

@@ -1,5 +1,7 @@
 pub mod audio;
 pub mod commands;
+pub mod library;
+pub mod queue;
 pub mod search;
 pub mod stream;
 
@@ -20,7 +22,18 @@ pub fn run() {
             commands::stop_playback,
             commands::stop,
             commands::seek_to,
-            commands::set_volume
+            commands::set_volume,
+            commands::enqueue_next,
+            commands::enqueue_last,
+            commands::dequeue_front,
+            commands::remove_from_queue,
+            commands::reorder_queue,
+            commands::clear_queue,
+            commands::get_queue,
+            commands::like_song,
+            commands::unlike_song,
+            commands::get_liked_songs,
+            commands::get_recent_plays
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

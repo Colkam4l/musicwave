@@ -196,7 +196,10 @@ pub async fn resolve_audio_stream(
         return Err(PlaybackCancelledError.into());
     }
 
-    eprintln!("[musicwave stream] Resolving audio stream for video_id: {}", video_id);
+    eprintln!(
+        "[musicwave stream] Resolving audio stream for video_id: {}",
+        video_id
+    );
     let video_url = format!("https://www.youtube.com/watch?v={}", video_id);
     let (auth_cookie, user_agent, auth_po_token) = load_auth_config();
     let ua_string = user_agent.unwrap_or_else(|| DEFAULT_UA.to_string());
@@ -525,7 +528,9 @@ impl Read for RangeStreamReader {
 
         let chunk_idx = self.pos / CHUNK_SIZE;
         let offset = (self.pos % CHUNK_SIZE) as usize;
-        let chunk = self.runtime.block_on(self.ctx.get_or_fetch_chunk(chunk_idx))?;
+        let chunk = self
+            .runtime
+            .block_on(self.ctx.get_or_fetch_chunk(chunk_idx))?;
 
         self.ctx.spawn_prefetch(&self.runtime, chunk_idx + 1);
 
@@ -573,7 +578,10 @@ mod tests {
 
     #[test]
     fn test_parse_content_range_total() {
-        assert_eq!(parse_content_range_total("bytes 0-0/1234567"), Some(1234567));
+        assert_eq!(
+            parse_content_range_total("bytes 0-0/1234567"),
+            Some(1234567)
+        );
         assert_eq!(parse_content_range_total("bytes 0-524287/999"), Some(999));
         assert_eq!(parse_content_range_total("invalid"), None);
     }
@@ -587,7 +595,8 @@ mod tests {
             total_seconds: 10.0,
             client: reqwest::Client::new(),
         };
-        let mut reader = RangeStreamReader::new(resolved, tokio::runtime::Handle::current(), cancel);
+        let mut reader =
+            RangeStreamReader::new(resolved, tokio::runtime::Handle::current(), cancel);
 
         assert_eq!(reader.seek(SeekFrom::Start(250)).unwrap(), 250);
         assert_eq!(reader.seek(SeekFrom::Current(-50)).unwrap(), 200);
@@ -656,11 +665,8 @@ mod tests {
         match rodio::DeviceSinkBuilder::open_default_sink() {
             Ok(sink) => {
                 let source = tokio::task::spawn_blocking(move || {
-                    let reader = RangeStreamReader::new(
-                        resolved_play,
-                        playback_handle,
-                        playback_cancel,
-                    );
+                    let reader =
+                        RangeStreamReader::new(resolved_play, playback_handle, playback_cancel);
                     Decoder::new_mp4(reader).expect("MP4 decoder for sink should open")
                 })
                 .await
@@ -696,7 +702,9 @@ mod tests {
                 );
             }
             Err(e) => {
-                eprintln!("[test] audio sink unavailable in test env ({e:?}); PCM decode/seek verified");
+                eprintln!(
+                    "[test] audio sink unavailable in test env ({e:?}); PCM decode/seek verified"
+                );
             }
         }
 

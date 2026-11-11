@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| **Branch** | `feature/sprint-3-queue-library` |
+| **Branch** | `feature/sprint-3-queue-library-navigation` |
 | **Depends On** | Sprint 2 complete and merged to `main` |
-| **Status** | ⏳ Not Started |
+| **Status** | ✅ Complete |
 | **Scope** | ~2–3 focused sessions |
 
 > **Related docs:** [CLAUDE.md](../CLAUDE.md) · [decisions.md](../decisions.md) · [SETUP.md](../SETUP.md) · [Sprint Index](./README.md)
@@ -54,12 +54,12 @@ src/
 ### 2.2 Tasks
 
 #### Rust Backend — Queue
-- [ ] **T3-1:** Create `queue.rs` with a `tokio::sync::Mutex<VecDeque<SongResult>>` as a global queue state.
-- [ ] **T3-2:** Implement functions: `enqueue_next(song)`, `enqueue_last(song)`, `dequeue_front() -> Option<SongResult>`, `clear_queue()`, `get_queue() -> Vec<SongResult>`.
-- [ ] **T3-3:** Modify `audio.rs`: when `player://ended` event fires, call `dequeue_front()` and if a song exists, automatically call `play()` with the next song. Emit `player://track-changed` event to the frontend.
+- [x] **T3-1:** Create `queue.rs` with a `tokio::sync::Mutex<VecDeque<SongResult>>` as a global queue state.
+- [x] **T3-2:** Implement functions: `enqueue_next(song)`, `enqueue_last(song)`, `dequeue_front() -> Option<SongResult>`, `clear_queue()`, `get_queue() -> Vec<SongResult>`.
+- [x] **T3-3:** Modify `audio.rs`: when `player://ended` event fires, call `dequeue_front()` and if a song exists, automatically call `play()` with the next song. Emit `player://track-changed` event to the frontend.
 
 #### Rust Backend — Library
-- [ ] **T3-4:** Create `library.rs`. Define `Library` struct:
+- [x] **T3-4:** Create `library.rs`. Define `Library` struct:
   ```rust
   #[derive(Serialize, Deserialize, Default)]
   struct Library {
@@ -67,34 +67,34 @@ src/
       recent_plays: VecDeque<SongResult>, // max 50 entries
   }
   ```
-- [ ] **T3-5:** Implement `load_library() -> Library` (reads from `~/.local/share/musicwave/library.json`, creates file if absent).
-- [ ] **T3-6:** Implement `save_library(library: &Library)` (atomic write using a temp file + rename).
-- [ ] **T3-7:** Expose Tauri commands: `like_song(song)`, `unlike_song(video_id)`, `get_liked_songs()`, `get_recent_plays()`.
-- [ ] **T3-8:** In `audio.rs`, when a song begins playing, call `library::add_to_recents(song)`.
+- [x] **T3-5:** Implement `load_library() -> Library` (reads from `~/.local/share/musicwave/library.json`, creates file if absent).
+- [x] **T3-6:** Implement `save_library(library: &Library)` (atomic write using a temp file + rename).
+- [x] **T3-7:** Expose Tauri commands: `like_song(song)`, `unlike_song(video_id)`, `get_liked_songs()`, `get_recent_plays()`.
+- [x] **T3-8:** In `audio.rs`, when a song begins playing, call `library::add_to_recents(song)`.
 
 #### Frontend — Sidebar Layout
-- [ ] **T3-9:** Build `Sidebar.tsx` — a fixed left column (220px wide) with navigation links:
+- [x] **T3-9:** Build `Sidebar.tsx` — a fixed left column (220px wide) with navigation links:
   - 🔍 Search (`/`)
   - ❤️ Library (`/library`)
   - ⚙️ Settings (`/settings`) — page is placeholder for Sprint 4
   - A "Queue" icon button that opens `QueuePanel`
-- [ ] **T3-10:** Update `App.tsx` layout to: `[Sidebar] | [Page Content]` side by side. Player Bar remains at the bottom spanning full width.
+- [x] **T3-10:** Update `App.tsx` layout to: `[Sidebar] | [Page Content]` side by side. Player Bar remains at the bottom spanning full width.
 
 #### Frontend — Queue
-- [ ] **T3-11:** Build `QueuePanel.tsx` — a slide-in drawer from the right showing the ordered list of queued songs. Each item has a remove (×) button and can be drag-reordered (use `@dnd-kit/core` or simple index swap, not drag-and-drop if too complex).
-- [ ] **T3-12:** Add "Add to Queue" context action on each `SongCard` (right-click or a `+` icon on hover).
-- [ ] **T3-13:** Wire `useQueue.ts` to listen for `player://ended` and auto-advance.
-- [ ] **T3-14:** Wire `PlaybackControls.tsx` Previous/Next buttons (stubbed in Sprint 2) to `useQueue` skip functions.
+- [x] **T3-11:** Build `QueuePanel.tsx` — a slide-in drawer from the right showing the ordered list of queued songs. Each item has a remove (×) button and can be drag-reordered (use `@dnd-kit/core` or simple index swap, not drag-and-drop if too complex).
+- [x] **T3-12:** Add "Add to Queue" context action on each `SongCard` (right-click or a `+` icon on hover).
+- [x] **T3-13:** Wire `useQueue.ts` to listen for `player://ended` and auto-advance.
+- [x] **T3-14:** Wire `PlaybackControls.tsx` Previous/Next buttons (stubbed in Sprint 2) to `useQueue` skip functions.
 
 #### Frontend — Library
-- [ ] **T3-15:** Build `LibraryPage.tsx`:
+- [x] **T3-15:** Build `LibraryPage.tsx`:
   - **Liked Songs** section — grid of `SongCard` components loaded via `invoke('get_liked_songs')`
   - **Recently Played** section — horizontal scroll row of last 10 played songs
-- [ ] **T3-16:** Add a ❤️ like button to `SongCard`. Filled = liked, outline = not liked. Calls `invoke('like_song')` or `invoke('unlike_song')`.
-- [ ] **T3-17:** Build `ArtistPage.tsx` — calls `invoke('search_songs', { query: artistName })` and filters results. Navigated to from `SongCard` artist name click (link).
+- [x] **T3-16:** Add a ❤️ like button to `SongCard`. Filled = liked, outline = not liked. Calls `invoke('like_song')` or `invoke('unlike_song')`.
+- [x] **T3-17:** Build `ArtistPage.tsx` — calls `invoke('search_songs', { query: artistName })` and filters results. Navigated to from `SongCard` artist name click (link).
 
 #### Notifications
-- [ ] **T3-18:** Build a `Toast.tsx` system (a `<ToastContainer>` rendered in `App.tsx` outside the router). Exposes a `useToast()` hook that any component can call to show a message. Replace the Sprint 2 auth error inline message with this system.
+- [x] **T3-18:** Build a `Toast.tsx` system (a `<ToastContainer>` rendered in `App.tsx` outside the router). Exposes a `useToast()` hook that any component can call to show a message. Replace the Sprint 2 auth error inline message with this system.
 
 ---
 
@@ -131,30 +131,35 @@ Use React Router's `NavLink` (or a manual `useLocation` check) to highlight the 
 
 ## 4. Definition of Done
 
-- [ ] Playing a song and letting it end automatically plays the next queued song
-- [ ] Queue panel opens and shows the current queue
-- [ ] Adding a song to the queue from search results works
-- [ ] Liked songs persist across app restarts
-- [ ] Library page shows liked songs and recently played tracks
-- [ ] Clicking an artist name navigates to a page showing their songs
-- [ ] Previous / Next buttons in the player bar work
-- [ ] Toast notifications replace all direct `alert()` or inline error strings
-- [ ] `cargo clippy -- -D warnings` passes
-- [ ] `cargo fmt --check` passes
-- [ ] `npm run build` compiles with zero TypeScript errors
-- [ ] End-of-Sprint Report section below is filled in
+- [x] Playing a song and letting it end automatically plays the next queued song
+- [x] Queue panel opens and shows the current queue
+- [x] Adding a song to the queue from search results works
+- [x] Liked songs persist across app restarts
+- [x] Library page shows liked songs and recently played tracks
+- [x] Clicking an artist name navigates to a page showing their songs
+- [x] Previous / Next buttons in the player bar work
+- [x] Toast notifications replace all direct `alert()` or inline error strings
+- [x] `cargo clippy -- -D warnings` passes
+- [x] `cargo fmt --check` passes
+- [x] `npm run build` compiles with zero TypeScript errors
+- [x] End-of-Sprint Report section below is filled in
 
 ---
 
 ## 5. End-of-Sprint Report
 
-> ⚠️ **This section is filled in by the implementing agent after completion.**
-
 ### Date Completed
-_TBD_
+2026-11-11
 
 ### What Was Built
-_Describe each file created and its role._
+- **`src-tauri/src/queue.rs`**: Global `tokio::sync::Mutex<VecDeque<SongResult>>` play queue capped at 200 items (`MAX_QUEUE_LEN`), exposing `enqueue_next`, `enqueue_last`, `dequeue_front`, `remove_at`, `reorder`, `clear_queue`, and `get_queue`, with unit tests.
+- **`src-tauri/src/library.rs`**: Atomic temp-file+rename JSON persistence (`library.json` in `app_data_dir()`), supporting deduplicated `liked_songs` and max-50 `recent_plays`, plus `like_song`, `unlike_song`, `get_liked_songs`, `add_to_recents`, and `get_recent_plays`, with persistence unit tests.
+- **`src-tauri/src/audio.rs` & `commands.rs` & `lib.rs`**: Unified track playback via `audio::play_track`, automatic recording into `recent_plays`, automatic `dequeue_front` + `player://track-changed` advancement when a song ends naturally, and all queue/library IPC command bindings.
+- **`src/store/queueStore.ts` & `src/hooks/useQueue.ts`**: Zustand queue + playback history state synchronized with Rust queue commands, `skipNext`, `skipPrev` (restart if >3s else previous track), `addToQueue`, `playNext`, `removeFromQueue`, `reorderQueue`, and `clearQueue`.
+- **`src/store/libraryStore.ts` & `src/hooks/useLibrary.ts`**: Zustand library store + initial load / live `library://recents-updated` listener and `toggleLike` / `isLiked` helpers.
+- **`src/store/toastStore.ts` & `src/components/Toast.tsx`**: Global glassmorphism `<ToastContainer />` and `useToast()` hook replacing Sprint 2's standalone `AuthToast`.
+- **`src/components/Sidebar.tsx`, `src/components/QueuePanel.tsx`, `src/pages/LibraryPage.tsx`, `src/pages/ArtistPage.tsx`, `src/pages/SettingsPage.tsx`**: Left navigation sidebar with live queue badge, right slide-out queue drawer with up/down swap & remove controls, Library view (Recently Played horizontal strip + Liked Songs list), Artist catalogue view, and Sprint 4 Settings placeholder.
+- **`src/components/SongCard.tsx`, `PlaybackControls.tsx`, `PlayerBar.tsx`, `App.tsx`, `hooks/usePlayer.ts`**: Wired ❤️ Like and `+` / right-click Queue actions on song rows, clickable artist names navigating to `/artist/:id`, enabled Previous/Next skip controls, and `[Sidebar] | [Page Content]` routing layout.
 
 ### How to Test
 

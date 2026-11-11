@@ -118,7 +118,10 @@ fn parse_subtitle_fields(subtitle: &str) -> (String, Option<String>, Option<Stri
         .unwrap_or_else(|| "Unknown Artist".to_string());
 
     let album = if parts.len() >= 2 {
-        parts.last().map(|s| (*s).to_string()).filter(|s| !s.is_empty())
+        parts
+            .last()
+            .map(|s| (*s).to_string())
+            .filter(|s| !s.is_empty())
     } else {
         None
     };
@@ -305,9 +308,16 @@ mod tests {
         assert!(!first.title.is_empty());
 
         let loc_results = search_songs("location").await;
-        assert!(loc_results.is_ok(), "location search failed: {loc_results:?}");
+        assert!(
+            loc_results.is_ok(),
+            "location search failed: {loc_results:?}"
+        );
         let loc_list = loc_results.unwrap();
-        assert!(loc_list.len() >= 10, "expected >=10 results, got {}", loc_list.len());
+        assert!(
+            loc_list.len() >= 10,
+            "expected >=10 results, got {}",
+            loc_list.len()
+        );
         assert!(!loc_list[0].video_id.is_empty());
         assert!(!loc_list[0].artist.is_empty());
     }

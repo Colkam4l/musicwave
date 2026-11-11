@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Music, Play, Pause, Disc, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Clock, Disc, Heart, Music, Pause, Play, Plus } from "lucide-react";
 import { Song } from "../types/music";
 import { usePlayer } from "../hooks/usePlayer";
+import { useQueue } from "../hooks/useQueue";
+import { useLibrary } from "../hooks/useLibrary";
 
 interface SongCardProps {
   song: Song;
@@ -12,13 +15,17 @@ interface SongCardProps {
 export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const navigate = useNavigate();
+  const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
+  const { addToQueue } = useQueue();
+  const { isLiked, toggleLike } = useLibrary();
 
   useEffect(() => {
     setImageError(false);
   }, [song.thumbnailUrl]);
-  const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
 
   const isCurrentSong = currentSong?.videoId === song.videoId;
+  const liked = isLiked(song.videoId);
 
   const handleClick = () => {
     if (isCurrentSong) {
@@ -29,9 +36,14 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
       playSong(song);
     }
   };
+
   return (
     <div
       onClick={handleClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        addToQueue(song);
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       role="button"
@@ -97,7 +109,9 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: isHovered ? "0 4px 12px rgba(0,0,0,0.5)" : "0 2px 6px rgba(0,0,0,0.3)",
+          boxShadow: isHovered
+            ? "0 4px 12px rgba(0,0,0,0.5)"
+            : "0 2px 6px rgba(0,0,0,0.3)",
         }}
       >
         {song.thumbnailUrl && !imageError ? (
@@ -129,7 +143,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
         )}
       </div>
 
-      {/* Song Title and Artist */}
+      {/* Song Title and Clickable Artist Link */}
       <div
         style={{
           flex: 1,
@@ -137,6 +151,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
           display: "flex",
           flexDirection: "column",
           gap: "0.2rem",
+          alignItems: "flex-start",
         }}
       >
         <span
@@ -147,29 +162,41 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            maxWidth: "100%",
           }}
           title={song.title}
         >
           {song.title}
         </span>
-        <span
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/artist/${encodeURIComponent(song.artist)}`);
+          }}
           style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
             fontSize: "var(--font-size-xs)",
-            color: "var(--text-muted)",
+            color: isHovered ? "var(--text-secondary)" : "var(--text-muted)",
+            cursor: "pointer",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            maxWidth: "100%",
+            textAlign: "left",
           }}
-          title={song.artist}
+          title={`View artist: ${song.artist}`}
         >
           {song.artist}
-        </span>
+        </button>
       </div>
 
-      {/* Album (hidden on narrow widths or displayed subtly) */}
+      {/* Album */}
       <div
         style={{
-          flex: 0.8,
+          flex: 0.75,
           minWidth: 0,
           display: "flex",
           alignItems: "center",
@@ -183,9 +210,74 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
         title={song.album ?? "Single"}
       >
         <Disc size={13} style={{ flexShrink: 0, opacity: 0.7 }} />
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
           {song.album ?? "Single"}
         </span>
+      </div>
+
+      {/* Like & Queue Action Buttons */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.25rem",
+          flexShrink: 0,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={() => addToQueue(song)}
+          title="Add to queue (or right-click row)"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: "none",
+            background: "transparent",
+            color: isHovered ? "var(--text-primary)" : "var(--text-muted)",
+            opacity: isHovered ? 1 : 0.45,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "var(--transition-fast)",
+          }}
+        >
+          <Plus size={16} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => toggleLike(song)}
+          title={liked ? "Remove from Liked Songs" : "Add to Liked Songs"}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: "none",
+            background: "transparent",
+            color: liked ? "var(--accent-rose)" : "var(--text-muted)",
+            opacity: liked || isHovered ? 1 : 0.55,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "var(--transition-fast)",
+          }}
+        >
+          <Heart
+            size={15}
+            fill={liked ? "var(--accent-rose)" : "none"}
+            color={liked ? "var(--accent-rose)" : "currentColor"}
+          />
+        </button>
       </div>
 
       {/* Duration */}
@@ -196,7 +288,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
           gap: "0.3rem",
           fontSize: "var(--font-size-xs)",
           color: "var(--text-muted)",
-          minWidth: "55px",
+          minWidth: "52px",
           justifyContent: "flex-end",
           flexShrink: 0,
         }}

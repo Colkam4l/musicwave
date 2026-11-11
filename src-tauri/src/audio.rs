@@ -1,5 +1,7 @@
+use crate::search::SongResult;
 use crate::stream::{
-    PlaybackCancel, PlaybackCancelledError, RangeStreamReader, ResolvedAudioStream,
+    PlaybackCancel, PlaybackCancelledError, RangeStreamReader, ResolvedAudioStream, is_auth_error,
+    is_cancelled_error, resolve_audio_stream,
 };
 use rodio::{Decoder, DeviceSinkBuilder, MixerDeviceSink, Player};
 use serde::{Deserialize, Serialize};
@@ -83,13 +85,36 @@ fn spawn_progress_monitor(
 
             if is_empty && (elapsed > 0.5 || (total_seconds > 0.0 && total_seconds <= 1.0)) {
                 eprintln!("[musicwave audio] Track ended at {:.2}s", elapsed);
-                let _ = app_handle.emit("player://ended", ());
                 let ended_payload = ProgressPayload {
                     elapsed_seconds: elapsed.min(total_seconds),
                     total_seconds,
                     is_playing: false,
                 };
                 let _ = app_handle.emit("player://progress", ended_payload);
+
+                if let Some(next_song) = crate::queue::dequeue_front().await {
+                    let _ = app_handle.emit("player://track-changed", &next_song);
+                    let handle_clone = app_handle.clone();
+                    tokio::spawn(async move {
+                        if let Err(err) = play_track(
+                            next_song.video_id.clone(),
+                            Some(next_song),
+                            handle_clone.clone(),
+                        )
+                        .await
+                            && !is_cancelled_error(&err)
+                        {
+                            if is_auth_error(&err) {
+                                let _ = handle_clone.emit("player://auth-required", ());
+                            } else {
+                                let _ = handle_clone.emit("player://error", err.to_string());
+                            }
+                            let _ = handle_clone.emit("player://ended", ());
+                        }
+                    });
+                } else {
+                    let _ = app_handle.emit("player://ended", ());
+                }
                 break;
             }
 
@@ -187,6 +212,25 @@ pub async fn play_stream(
     engine.player = Some(player);
     engine.total_seconds = total_seconds;
     engine.abort_handle = Some(abort_handle);
+
+    Ok(())
+}
+
+/// Resolves and starts playing `video_id`, recording `song` in recently played once active.
+pub async fn play_track(
+    video_id: String,
+    song: Option<SongResult>,
+    app_handle: AppHandle,
+) -> anyhow::Result<()> {
+    let (session_gen, cancel) = begin_playback_session().await;
+    let resolved = resolve_audio_stream(&video_id, &cancel).await?;
+    play_stream(resolved, session_gen, cancel, app_handle.clone()).await?;
+
+    if let Some(song_meta) = song
+        && let Ok(recents) = crate::library::add_to_recents(&app_handle, song_meta).await
+    {
+        let _ = app_handle.emit("library://recents-updated", recents);
+    }
 
     Ok(())
 }

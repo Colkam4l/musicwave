@@ -14,6 +14,7 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
+      className="sidebar"
       style={{
         width: 220,
         flexShrink: 0,

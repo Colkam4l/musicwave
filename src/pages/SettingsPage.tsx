@@ -11,6 +11,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { usePlatform } from "../hooks/usePlatform";
 
 interface AppSettings {
   cookie: string | null;
@@ -47,6 +48,7 @@ const fieldInputStyle: React.CSSProperties = {
  */
 export const SettingsPage: React.FC = () => {
   const { showToast } = useToast();
+  const { isMobile } = usePlatform();
   const [cookie, setCookie] = useState("");
   const [userAgent, setUserAgent] = useState("");
   const [poToken, setPoToken] = useState("");
@@ -227,18 +229,29 @@ export const SettingsPage: React.FC = () => {
               <label htmlFor="settings-cookie" style={fieldLabelStyle}>
                 Cookie
               </label>
-              <textarea
-                id="settings-cookie"
-                rows={4}
-                value={cookie}
-                onChange={(e) => setCookie(e.target.value)}
-                placeholder="Paste your YouTube Music Cookie header (e.g. VISITOR_INFO1_LIVE=...; SID=...)"
-                style={{
-                  ...fieldInputStyle,
-                  resize: "vertical",
-                  minHeight: "96px",
-                }}
-              />
+              {isMobile ? (
+                <input
+                  id="settings-cookie"
+                  type="password"
+                  value={cookie}
+                  onChange={(e) => setCookie(e.target.value)}
+                  placeholder="Paste your YouTube Music Cookie header"
+                  style={fieldInputStyle}
+                />
+              ) : (
+                <textarea
+                  id="settings-cookie"
+                  rows={4}
+                  value={cookie}
+                  onChange={(e) => setCookie(e.target.value)}
+                  placeholder="Paste your YouTube Music Cookie header (e.g. VISITOR_INFO1_LIVE=...; SID=...)"
+                  style={{
+                    ...fieldInputStyle,
+                    resize: "vertical",
+                    minHeight: "96px",
+                  }}
+                />
+              )}
             </div>
 
             <div>

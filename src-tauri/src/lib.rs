@@ -7,20 +7,21 @@ pub mod queue;
 pub mod search;
 pub mod settings;
 pub mod stream;
-#[cfg(desktop)]
+#[cfg(all(desktop, not(target_os = "android")))]
 pub mod tray;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_os::init())
         .setup(|app| {
             let app_handle = app.handle();
             if let Err(err) = settings::load_settings(app_handle) {
                 eprintln!("[musicwave settings] Failed loading settings on startup: {err}");
             }
 
-            #[cfg(desktop)]
+            #[cfg(all(desktop, not(target_os = "android")))]
             tray::setup_tray(app_handle)?;
 
             #[cfg(all(target_os = "linux", feature = "mpris"))]
@@ -29,8 +30,10 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            #[cfg(desktop)]
+            #[cfg(all(desktop, not(target_os = "android")))]
             tray::handle_window_event(window, event);
+            #[cfg(any(not(desktop), target_os = "android"))]
+            let _ = (window, event);
         })
         .invoke_handler(tauri::generate_handler![
             commands::ping,

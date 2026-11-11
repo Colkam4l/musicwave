@@ -17,7 +17,7 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 *   **Sprint 4 — Polish, Settings & Auth UX:** Implemented persistent `settings.rs` (`settings.json` with one-time legacy `headers.json` / `po_token.txt` migration and instant reload on playback), `SettingsPage` (auth credentials form, Test Connection, About + injected `__APP_VERSION__`), Linux `mpris.rs` (`zbus` D-Bus media player controls & metadata), `tray.rs` system tray icon + menu + close-to-tray, global keyboard shortcuts (`useKeyboardShortcuts` + `KeyboardShortcuts` modal), and Framer Motion transitions (`AnimatedLayout`, `SongCard` hover scale, `QueuePanel` slide-in).
 
 ### Active Sprint
-*   **Sprint 5 — Android Port (Tauri Mobile):** ⏳ Next to start.
+*   **Sprint 5 — Android Port (Tauri Mobile):** 🚧 In Progress on `feature/sprint-5-android` (mobile responsive UI, `tauri-plugin-os`, Android `minSdkVersion`, and desktop/mobile feature gating implemented; `gen/android/` & APK build pending Android SDK/NDK and `rustup` Android targets on host).
 
 ### Sprints Overview
 | Sprint | Name | Status |
@@ -27,7 +27,7 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 | [2](./sprints/SPRINT-2.md) | Audio Playback & Player Bar | ✅ Complete |
 | [3](./sprints/SPRINT-3.md) | Queue, Library & Navigation | ✅ Complete |
 | [4](./sprints/SPRINT-4.md) | Polish, Settings & Auth UX | ✅ Complete |
-| [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | ⏳ Next |
+| [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | 🚧 In Progress |
 
 ---
 

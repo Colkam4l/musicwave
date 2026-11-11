@@ -83,27 +83,28 @@ npm run tauri dev
 
 ## 5. Android Prerequisites (Sprint 5+)
 
-Required to build the Android APK:
+Required to initialize `src-tauri/gen/android` and build the Android APK:
 
 ```bash
-# Install Android SDK and NDK via Android Studio (recommended)
-# Then set environment variables:
+# 1. Install Android SDK + NDK + platform-tools (adb) via Android Studio or Arch AUR (`android-sdk`, `android-ndk`, `android-tools`)
+# Set environment variables (add to ~/.bashrc or ~/.zshrc):
 export ANDROID_HOME="$HOME/Android/Sdk"
-export NDK_HOME="$ANDROID_HOME/ndk/$(ls $ANDROID_HOME/ndk | head -1)"
+export NDK_HOME="$ANDROID_HOME/ndk/$(ls "$ANDROID_HOME/ndk" | head -1)"
 
-# Add Rust cross-compilation targets
+# 2. Ensure rustup manages the Rust toolchain and add Android cross-compilation targets:
 rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
 
-# Install cargo-ndk helper
-cargo install cargo-ndk
+# 3. Initialize the Tauri Android project (one-time, generates src-tauri/gen/android/):
+npx tauri android init
 ```
 
-Start Android dev:
+Start Android dev on a connected emulator/device:
 ```bash
-cargo tauri android dev
+npx tauri android dev
 ```
 
-Build a debug APK:
+Build a debug APK for sideloading:
 ```bash
-cargo tauri android build --debug
+npx tauri android build --debug
+adb install src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
 ```

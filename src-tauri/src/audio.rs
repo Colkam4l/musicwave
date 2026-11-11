@@ -58,11 +58,12 @@ static AUDIO_STATE: LazyLock<Mutex<AudioState>> = LazyLock::new(|| {
     })
 });
 
+#[allow(unused_variables)]
 fn sync_integrations(song: Option<SongResult>, status: &'static str) {
     #[cfg(all(target_os = "linux", feature = "mpris"))]
     crate::mpris::notify_state_change(song.clone(), status);
 
-    #[cfg(desktop)]
+    #[cfg(all(desktop, not(target_os = "android")))]
     crate::tray::update_state(song, status == "Playing");
 }
 

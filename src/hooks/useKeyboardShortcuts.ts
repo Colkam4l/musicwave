@@ -24,10 +24,16 @@ const focusSearchInput = () => {
   }
 };
 
+interface UseKeyboardShortcutsOptions {
+  enabled?: boolean;
+}
+
 /**
  * Registers global keyboard shortcuts for playback, queue, navigation, and help modal.
  */
-export const useKeyboardShortcuts = () => {
+export const useKeyboardShortcuts = ({
+  enabled = true,
+}: UseKeyboardShortcutsOptions = {}) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,6 +42,10 @@ export const useKeyboardShortcuts = () => {
   const { skipNext, skipPrev, toggleQueueOpen } = useQueue();
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === ",") {
         e.preventDefault();
@@ -113,6 +123,7 @@ export const useKeyboardShortcuts = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
+    enabled,
     isHelpOpen,
     navigate,
     location.pathname,

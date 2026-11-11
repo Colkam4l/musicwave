@@ -25,6 +25,7 @@ export const QueuePanel: React.FC = () => {
     <AnimatePresence>
       {isQueueOpen && (
         <motion.aside
+          className="queue-panel"
           initial={{ x: "100%", opacity: 0.92 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "100%", opacity: 0.92 }}

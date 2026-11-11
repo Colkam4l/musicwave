@@ -40,6 +40,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
 
   return (
     <motion.div
+      className="song-card-row"
       whileHover={{ scale: 1.01 }}
       transition={{ duration: 0.14, ease: "easeOut" }}
       onClick={handleClick}
@@ -98,8 +99,9 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
         )}
       </div>
 
-      {/* 48x48 Thumbnail with fallback */}
+      {/* 48x48 Thumbnail with fallback (56x56 on mobile via .song-card-thumb) */}
       <div
+        className="song-card-thumb"
         style={{
           width: 48,
           height: 48,

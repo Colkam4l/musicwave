@@ -4,7 +4,7 @@
 |---|---|
 | **Branch** | `feature/sprint-5-android` |
 | **Depends On** | Sprint 4 complete and merged to `main` |
-| **Status** | ⏳ Not Started |
+| **Status** | 🚧 In Progress (UI & Rust gating complete; blocked on Android SDK/NDK/rustup targets) |
 | **Scope** | ~3 focused sessions |
 
 > **Related docs:** [CLAUDE.md](../CLAUDE.md) · [decisions.md](../decisions.md) · [SETUP.md](../SETUP.md) · [Sprint Index](./README.md)
@@ -68,85 +68,42 @@ src-tauri/
   cargo tauri android init
   ```
   This creates `gen/android/` — do not hand-edit generated files unless necessary.
-- [ ] **T5-3:** Update `tauri.conf.json` Android bundle section:
-  ```json
-  {
-    "bundle": {
-      "android": {
-        "minSdkVersion": 24,
-        "compileSdkVersion": 34,
-        "targetSdkVersion": 34
-      }
-    },
-    "identifier": "com.musicwave.app"
-  }
-  ```
+- [x] **T5-3:** Update `tauri.conf.json` Android bundle section (`bundle.android.minSdkVersion: 24` — note Tauri v2 `AndroidConfig` uses `deny_unknown_fields`, so `compileSdkVersion`/`targetSdkVersion` are not valid keys in `tauri.conf.json`)
 - [ ] **T5-4:** Verify the app builds and launches on the Android emulator:
   ```bash
   cargo tauri android dev
   ```
 
 #### Platform Detection
-- [ ] **T5-5:** Create `usePlatform.ts` hook using `@tauri-apps/plugin-os`:
-  ```ts
-  import { platform } from '@tauri-apps/plugin-os';
-  
-  export function usePlatform() {
-    const [isMobile, setIsMobile] = useState(false);
-    useEffect(() => {
-      platform().then(p => setIsMobile(p === 'android' || p === 'ios'));
-    }, []);
-    return { isMobile };
-  }
-  ```
-- [ ] **T5-6:** In `App.tsx`, use `usePlatform()` to conditionally render `<Sidebar>` (desktop) vs `<BottomNav>` (mobile).
-- [ ] **T5-7:** Conditionally render `<PlayerBar>` (desktop, 72px fixed bottom) vs `<MobilePlayerBar>` (mobile, 56px, above bottom nav).
+- [x] **T5-5:** Create `usePlatform.ts` hook using `@tauri-apps/plugin-os` (`platform()` is synchronous in `@tauri-apps/plugin-os` v2, wrapped safely for web preview fallback)
+- [x] **T5-6:** In `App.tsx`, use `usePlatform()` to conditionally render `<Sidebar>` (desktop) vs `<BottomNav>` (mobile).
+- [x] **T5-7:** Conditionally render `<PlayerBar>` (desktop, 80px fixed bottom) vs `<MobilePlayerBar>` (mobile, 56px, above bottom nav).
 
 #### Mobile UI Adaptations
-- [ ] **T5-8:** Create `mobile.css` with:
-  - Minimum touch target size: 44×44px for all interactive elements
-  - Bottom navigation: 56px tall, full width, fixed above `env(safe-area-inset-bottom)`
-  - Remove sidebar layout on mobile (`display: none` via `.mobile-layout .sidebar`)
-  - Increase font sizes for readability on small screens (base 16px mobile vs 14px desktop)
-  - Song cards: full-width on mobile, album art 56×56px
-
-- [ ] **T5-9:** Build `BottomNav.tsx`:
+- [x] **T5-8:** Create `mobile.css` with:
+  - Minimum touch target size: 44×44px for interactive controls under `.mobile-layout`
+  - Bottom navigation: 56px tall + `env(safe-area-inset-bottom)`
+  - Sidebar hidden & mobile main padding adjusted
+  - Base 16px mobile typography
+  - Song cards: full-width with 56×56px album art
+- [x] **T5-9:** Build `BottomNav.tsx`:
   ```
-  [ 🔍 Search ] [ ❤️ Library ] [ ▶ Now Playing ] [ ⚙️ Settings ]
+  [ Search ] [ Library ] [ Now Playing ] [ Settings ]
   ```
-  Tapping "Now Playing" opens a full-screen player view (not just the mini bar).
-
-- [ ] **T5-10:** Build `MobilePlayerBar.tsx` — a compact one-line bar above the bottom nav:
-  ```
-  [ thumbnail ] [ title · artist ] [ ⏮ ] [ ⏸ ] [ ⏭ ]
-  ```
-  Tapping the bar anywhere except the control buttons opens the full-screen player view.
-
-- [ ] **T5-11:** Build `FullScreenPlayer.tsx` — shown only on mobile when the player bar is tapped:
-  - Large album art (80% screen width, centered)
-  - Song title + artist (large typography)
-  - Progress bar (full width)
-  - Play/Pause/Next/Prev controls (large, 56×56px buttons)
-  - Heart (like) button
-  - Slides in from bottom using Framer Motion
+  Tapping "Now Playing" opens `<FullScreenPlayer />`.
+- [x] **T5-10:** Build `MobilePlayerBar.tsx` — a compact one-line bar above the bottom nav (`thumbnail`, `title · artist`, `Prev`, `Play/Pause`, `Next`); tapping the bar opens `<FullScreenPlayer />`.
+- [x] **T5-11:** Build `FullScreenPlayer.tsx` — slide-up Framer Motion full-screen sheet with 80vw album art, title + clickable artist link, scrubable progress bar, 56×56px transport buttons, queue toggle, and Heart (like) button.
 
 #### Feature Adaptations for Mobile
-- [ ] **T5-12:** Disable MPRIS and system tray on Android (`#[cfg(not(target_os = "android"))]`).
-- [ ] **T5-13:** The settings page auth form on mobile uses `type="password"` for the Cookie field (long sensitive value).
-- [ ] **T5-14:** Keyboard shortcuts (`useKeyboardShortcuts.ts`) must be no-ops on Android (no physical keyboard guaranteed). Wrap with `if (!isMobile)`.
-- [ ] **T5-15:** Request Android `INTERNET` permission in `gen/android/app/src/main/AndroidManifest.xml` (Tauri should add this automatically, verify it is present).
+- [x] **T5-12:** Disable MPRIS and system tray on Android (`#[cfg(all(desktop, not(target_os = "android")))]` for `tray`, `#[cfg(all(target_os = "linux", feature = "mpris"))]` for `mpris`).
+- [x] **T5-13:** The settings page auth form on mobile uses `type="password"` for the Cookie field.
+- [x] **T5-14:** Keyboard shortcuts (`useKeyboardShortcuts.ts`) accept `{ enabled: !isMobile }` and no-op on mobile.
+- [ ] **T5-15:** Request Android `INTERNET` permission in `gen/android/app/src/main/AndroidManifest.xml` (pending `npx tauri android init`).
 
 #### APK Build
-- [ ] **T5-16:** Build a debug APK for sideloading:
-  ```bash
-  cargo tauri android build --debug
-  # Output: gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
-  ```
-- [ ] **T5-17:** Install on a connected physical device:
-  ```bash
-  adb install gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
-  ```
-- [ ] **T5-18:** Update `SETUP.md` with Android prerequisites and build instructions.
+- [ ] **T5-16:** Build a debug APK for sideloading (`npx tauri android build --debug` — blocked pending Android SDK/NDK + `rustup` targets)
+- [ ] **T5-17:** Install on a connected physical device (`adb install ...`)
+- [x] **T5-18:** Update `SETUP.md` with Android prerequisites and build instructions.
 
 ---
 
@@ -202,22 +159,24 @@ Register it in `lib.rs`:
 - [ ] Bottom navigation replaces the sidebar on mobile
 - [ ] Full-screen player opens when tapping the mini player bar
 - [ ] All interactive elements have tap targets ≥ 44×44px
-- [ ] Settings page allows entering credentials on mobile (no file editing required)
-- [ ] `cargo clippy -- -D warnings` passes for the Android target
-- [ ] `SETUP.md` updated with Android prerequisites
+- [x] Settings page allows entering credentials on mobile (no file editing required)
+- [ ] `cargo clippy -- -D warnings` passes for the Android target (verified on Linux default + `--no-default-features`; Android target requires `rustup` cross-targets)
+- [x] `SETUP.md` updated with Android prerequisites
 - [ ] End-of-Sprint Report section below is filled in
 
 ---
 
-## 5. End-of-Sprint Report
+## 5. End-of-Sprint Report (In Progress)
 
-> ⚠️ **This section is filled in by the implementing agent after completion.**
+> ⚠️ **Code, UI, plugin, and config deliverables are complete; Android SDK/NDK + `rustup` cross-targets are not yet installed on the host to run `npx tauri android init` / APK build.**
 
-### Date Completed
-_TBD_
+### Implemented So Far
+- **Plugins & Config:** Added `@tauri-apps/plugin-os` and `tauri-plugin-os` (`2.4.0`), granted `"os:default"` in `src-tauri/capabilities/default.json`, registered `tauri_plugin_os::init()` in `src-tauri/src/lib.rs`, added `bundle.android.minSdkVersion: 24` in `src-tauri/tauri.conf.json`, and updated `SETUP.md`.
+- **Rust Mobile Gating:** Gated `tray.rs` and tray calls behind `#[cfg(all(desktop, not(target_os = "android")))]` alongside Linux-only `mpris.rs`; verified both `cargo clippy --all-targets -- -D warnings` and `cargo check --no-default-features --all-targets`.
+- **Mobile Frontend UI:** Created `src/hooks/usePlatform.ts`, `src/styles/mobile.css`, `src/components/BottomNav.tsx`, `src/components/MobilePlayerBar.tsx`, and `src/components/FullScreenPlayer.tsx`; wired conditional mobile layout in `src/App.tsx`, password-masked Cookie field on mobile in `src/pages/SettingsPage.tsx`, and `enabled: !isMobile` guard in `src/hooks/useKeyboardShortcuts.ts`.
 
-### What Was Built
-_Describe what was adapted for mobile and what was left unchanged._
+### Remaining Blockers (Host Toolchain)
+- Missing `ANDROID_HOME` / Android SDK / NDK, `adb`, and `rustup` (`aarch64-linux-android`, `armv7-linux-androideabi`, `i686-linux-android`, `x86_64-linux-android`) on the Arch Linux host (currently using system `rust 1:1.99.1-2`). Once installed, run `npx tauri android init`, verify `AndroidManifest.xml` `INTERNET` permission, and run `npx tauri android build --debug`.
 
 ### APK Location
 _Path to the generated debug APK._

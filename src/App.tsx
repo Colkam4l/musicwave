@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   HashRouter,
   Routes,
@@ -12,8 +12,11 @@ import { LibraryPage } from "./pages/LibraryPage";
 import { ArtistPage } from "./pages/ArtistPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { Sidebar } from "./components/Sidebar";
+import { BottomNav } from "./components/BottomNav";
 import { QueuePanel } from "./components/QueuePanel";
 import { PlayerBar } from "./components/PlayerBar";
+import { MobilePlayerBar } from "./components/MobilePlayerBar";
+import { FullScreenPlayer } from "./components/FullScreenPlayer";
 import { ToastContainer } from "./components/Toast";
 import { AnimatedLayout } from "./components/AnimatedLayout";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
@@ -21,10 +24,15 @@ import { usePlayerEvents } from "./hooks/usePlayer";
 import { useQueue, useQueueSync } from "./hooks/useQueue";
 import { useLibrarySync } from "./hooks/useLibrary";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { usePlatform } from "./hooks/usePlatform";
 
 const AppShell: React.FC = () => {
   const location = useLocation();
-  const { isHelpOpen, closeHelp } = useKeyboardShortcuts();
+  const { isMobile } = usePlatform();
+  const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
+  const { isHelpOpen, closeHelp } = useKeyboardShortcuts({
+    enabled: !isMobile,
+  });
   const { skipPrev } = useQueue();
 
   useEffect(() => {
@@ -48,16 +56,18 @@ const AppShell: React.FC = () => {
   }, [skipPrev]);
 
   return (
-    <>
+    <div className={isMobile ? "mobile-layout" : undefined}>
       <ToastContainer />
       <div
         style={{
           display: "flex",
           minHeight: "100vh",
-          paddingBottom: "80px",
+          paddingBottom: isMobile
+            ? "calc(112px + env(safe-area-inset-bottom, 0px))"
+            : "80px",
         }}
       >
-        <Sidebar />
+        {!isMobile && <Sidebar />}
         <main style={{ flex: 1, minWidth: 0 }}>
           <AnimatedLayout>
             <Routes location={location} key={location.pathname}>
@@ -71,9 +81,27 @@ const AppShell: React.FC = () => {
         </main>
       </div>
       <QueuePanel />
-      <PlayerBar />
-      <KeyboardShortcuts isOpen={isHelpOpen} onClose={closeHelp} />
-    </>
+      {isMobile ? (
+        <>
+          <MobilePlayerBar
+            onOpenFullScreen={() => setIsFullPlayerOpen(true)}
+          />
+          <BottomNav
+            isPlayerOpen={isFullPlayerOpen}
+            onOpenNowPlaying={() => setIsFullPlayerOpen(true)}
+          />
+          <FullScreenPlayer
+            isOpen={isFullPlayerOpen}
+            onClose={() => setIsFullPlayerOpen(false)}
+          />
+        </>
+      ) : (
+        <>
+          <PlayerBar />
+          <KeyboardShortcuts isOpen={isHelpOpen} onClose={closeHelp} />
+        </>
+      )}
+    </div>
   );
 };
 

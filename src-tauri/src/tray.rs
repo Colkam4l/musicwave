@@ -1,4 +1,4 @@
-#![cfg(desktop)]
+#![cfg(all(desktop, not(target_os = "android")))]
 
 use crate::search::SongResult;
 use std::sync::{LazyLock, Mutex};

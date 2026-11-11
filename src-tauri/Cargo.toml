@@ -28,6 +28,7 @@ rodio = { version = "0.22.2", features = ["symphonia-all"] }
 tokio = { version = "1.52.3", features = ["full"] }
 youtui-vendored-rusty_ytdl = "0.7.4-youtui-vendored.4"
 ytmapi-rs = { version = "0.3.2", features = ["reqwest"] }
+tauri-plugin-os = "2.4.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus = { version = "5", optional = true }

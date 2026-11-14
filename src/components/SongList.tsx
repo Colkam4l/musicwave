@@ -69,8 +69,8 @@ export const SongList: React.FC<SongListProps> = ({
     </div>
   );
 
-  // Empty State after searching
-  if (hasSearched && songs.length === 0 && !error) {
+  // Empty State after searching with valid query
+  if (hasSearched && songs.length === 0 && !error && query.trim().length > 0) {
     return (
       <div style={{ width: "100%", maxWidth: "860px", margin: "0 auto" }}>
         {errorBanner}

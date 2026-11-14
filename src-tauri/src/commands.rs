@@ -419,3 +419,32 @@ pub async fn download_track_for_offline(
 pub async fn is_track_cached(video_id: String, app_handle: AppHandle) -> Result<bool, String> {
     Ok(cache::is_track_cached(&app_handle, &video_id))
 }
+
+#[tauri::command]
+pub async fn get_search_suggestions(query: String) -> Result<Vec<String>, String> {
+    search::get_search_suggestions(&query)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn skip_to_queue_index(
+    index: usize,
+    app_handle: AppHandle,
+) -> Result<Option<SongResult>, String> {
+    if let Some(song) = queue::skip_to_index(index).await {
+        let _ = app_handle.emit("player://track-changed", &song);
+        let updated_queue = queue::get_queue().await;
+        let _ = app_handle.emit("queue://updated", &updated_queue);
+
+        let handle_clone = app_handle.clone();
+        let song_clone = song.clone();
+        tokio::spawn(async move {
+            let _ = audio::play_track(song_clone.video_id.clone(), Some(song_clone), handle_clone).await;
+        });
+
+        Ok(Some(song))
+    } else {
+        Ok(None)
+    }
+}

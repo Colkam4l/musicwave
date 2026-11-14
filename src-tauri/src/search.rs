@@ -486,6 +486,38 @@ pub async fn get_home_shelves() -> anyhow::Result<HomeShelves> {
     })
 }
 
+/// Fetches search autocomplete suggestions from YouTube's public completion endpoint.
+pub async fn get_search_suggestions(query: &str) -> anyhow::Result<Vec<String>> {
+    let clean = query.trim();
+    if clean.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(3))
+        .build()?;
+
+    let resp = client
+        .get("https://suggestqueries.google.com/complete/search")
+        .query(&[("client", "firefox"), ("ds", "yt"), ("q", clean)])
+        .header(reqwest::header::USER_AGENT, "Mozilla/5.0")
+        .send()
+        .await?;
+
+    let json: serde_json::Value = resp.json().await?;
+    let suggestions = json
+        .get(1)
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|item| item.as_str().map(|s| s.to_string()))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    Ok(suggestions)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

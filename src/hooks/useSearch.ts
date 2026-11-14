@@ -22,6 +22,7 @@ export const useSearch = () => {
       const q = (searchQuery ?? query).trim();
       if (!q) return;
 
+      setQuery(q);
       setLoading(true);
       setError(null);
 
@@ -38,8 +39,18 @@ export const useSearch = () => {
         setError(errorMsg);
       }
     },
-    [query, setLoading, setError, setResults]
+    [query, setQuery, setLoading, setError, setResults]
   );
+
+  const fetchSuggestions = useCallback(async (text: string): Promise<string[]> => {
+    const clean = text.trim();
+    if (!clean) return [];
+    try {
+      return await invoke<string[]>("get_search_suggestions", { query: clean });
+    } catch {
+      return [];
+    }
+  }, []);
 
   return {
     query,
@@ -49,6 +60,7 @@ export const useSearch = () => {
     hasSearched,
     setQuery,
     search,
+    fetchSuggestions,
     clearSearch,
   };
 };

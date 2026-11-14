@@ -93,7 +93,9 @@ pub fn run() {
             commands::get_cache_stats,
             commands::clear_cache,
             commands::download_track_for_offline,
-            commands::is_track_cached
+            commands::is_track_cached,
+            commands::get_search_suggestions,
+            commands::skip_to_queue_index
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

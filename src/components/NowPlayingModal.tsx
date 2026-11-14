@@ -5,6 +5,7 @@ import { usePlayer } from "../hooks/usePlayer";
 import { useQueue } from "../hooks/useQueue";
 import { useRecommendations } from "../hooks/useRecommendations";
 import { useLibrary } from "../hooks/useLibrary";
+import { useContextMenuStore } from "../store/contextMenuStore";
 import { LyricsSheet } from "./LyricsSheet";
 import { PlaybackControls } from "./PlaybackControls";
 import { ProgressBar } from "./ProgressBar";
@@ -33,11 +34,12 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
     seekTo,
     changeVolume,
   } = usePlayer();
-  const { queue, skipNext, skipPrev, canSkipNext, canSkipPrev, removeFromQueue, shuffleQueue } =
+  const { queue, skipNext, skipPrev, canSkipNext, canSkipPrev, removeFromQueue, shuffleQueue, skipToQueueIndex } =
     useQueue();
   const { recommendations, fetchRecommendations, startRadio, isLoading: isRecsLoading } =
     useRecommendations();
   const { isLiked, toggleLike } = useLibrary();
+  const openContextMenu = useContextMenuStore((s) => s.openContextMenu);
 
   // Fetch recommendations when switching to "related" tab
   React.useEffect(() => {
@@ -341,6 +343,18 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
                   queue.map((item, idx) => (
                     <div
                       key={`${item.videoId}-${idx}`}
+                      onClick={() => skipToQueueIndex(idx)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        openContextMenu({ x: e.clientX, y: e.clientY }, item);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          skipToQueueIndex(idx);
+                        }
+                      }}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -348,6 +362,14 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
                         padding: "8px 12px",
                         borderRadius: "10px",
                         backgroundColor: "rgba(255,255,255,0.03)",
+                        cursor: "pointer",
+                        transition: "background 0.2s ease, transform 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
                       }}
                     >
                       <span style={{ width: "20px", fontSize: "12px", opacity: 0.5 }}>
@@ -385,7 +407,10 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
                         </div>
                       </div>
                       <button
-                        onClick={() => removeFromQueue(idx)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFromQueue(idx);
+                        }}
                         style={{
                           background: "none",
                           border: "none",
@@ -393,6 +418,8 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
                           cursor: "pointer",
                           padding: "4px",
                         }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.9)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
                       >
                         ×
                       </button>

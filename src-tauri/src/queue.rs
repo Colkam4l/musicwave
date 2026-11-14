@@ -96,6 +96,17 @@ pub async fn get_queue() -> Vec<SongResult> {
     queue.iter().cloned().collect()
 }
 
+/// Skips directly to the track at `index`, dropping preceding tracks from the queue
+/// and returning the selected song for immediate playback.
+pub async fn skip_to_index(index: usize) -> Option<SongResult> {
+    let mut queue = PLAY_QUEUE.lock().await;
+    if index >= queue.len() {
+        return None;
+    }
+    queue.drain(0..index);
+    queue.pop_front()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,5 +152,27 @@ mod tests {
         assert!(overflow.is_err());
 
         assert!(clear_queue().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_skip_to_index() {
+        clear_queue().await;
+        enqueue_last(sample_song("t1")).await.unwrap();
+        enqueue_last(sample_song("t2")).await.unwrap();
+        enqueue_last(sample_song("t3")).await.unwrap();
+        enqueue_last(sample_song("t4")).await.unwrap();
+
+        // Skip to index 2 ("t3")
+        let skipped = skip_to_index(2).await.unwrap();
+        assert_eq!(skipped.video_id, "t3");
+
+        // The remaining queue should only have "t4"
+        let remaining = get_queue().await;
+        assert_eq!(remaining.len(), 1);
+        assert_eq!(remaining[0].video_id, "t4");
+
+        // Out of bounds returns None
+        assert!(skip_to_index(10).await.is_none());
+        clear_queue().await;
     }
 }

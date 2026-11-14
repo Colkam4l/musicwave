@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowUp, ListMusic, Music, Trash2, X } from "lucide-react";
 import { useQueue } from "../hooks/useQueue";
 import { usePlayer } from "../hooks/usePlayer";
+import { useContextMenuStore } from "../store/contextMenuStore";
 import { Song } from "../types/music";
 
 export const QueuePanel: React.FC = () => {
@@ -13,12 +14,13 @@ export const QueuePanel: React.FC = () => {
     removeFromQueue,
     reorderQueue,
     clearQueue,
+    skipToQueueIndex,
   } = useQueue();
-  const { currentSong, playSong } = usePlayer();
+  const { currentSong } = usePlayer();
+  const openContextMenu = useContextMenuStore((s) => s.openContextMenu);
 
-  const handlePlayQueuedItem = async (song: Song, index: number) => {
-    await removeFromQueue(index);
-    await playSong(song);
+  const handlePlayQueuedItem = async (_song: Song, index: number) => {
+    await skipToQueueIndex(index);
   };
 
   return (
@@ -235,6 +237,10 @@ export const QueuePanel: React.FC = () => {
               <div
                 key={`${song.videoId}-${idx}`}
                 onClick={() => handlePlayQueuedItem(song, idx)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  openContextMenu({ x: e.clientX, y: e.clientY }, song);
+                }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {

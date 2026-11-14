@@ -23,6 +23,7 @@ import { ToastContainer } from "./components/Toast";
 import { AnimatedLayout } from "./components/AnimatedLayout";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { AuthModal } from "./components/AuthModal";
+import { ContextMenu } from "./components/common/ContextMenu";
 import { usePlayerEvents } from "./hooks/usePlayer";
 import { useQueue, useQueueSync } from "./hooks/useQueue";
 import { useLibrarySync } from "./hooks/useLibrary";
@@ -108,6 +109,7 @@ const AppShell: React.FC = () => {
           <KeyboardShortcuts isOpen={isHelpOpen} onClose={closeHelp} />
         </>
       )}
+      <ContextMenu />
     </div>
   );
 };

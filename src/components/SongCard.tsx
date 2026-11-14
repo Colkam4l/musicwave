@@ -7,6 +7,7 @@ import { usePlayer } from "../hooks/usePlayer";
 import { useQueue } from "../hooks/useQueue";
 import { useLibrary } from "../hooks/useLibrary";
 import { useCache } from "../hooks/useCache";
+import { useContextMenuStore } from "../store/contextMenuStore";
 import { PlaylistModal } from "./PlaylistModal";
 
 interface SongCardProps {
@@ -24,6 +25,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
   const { addToQueue } = useQueue();
   const { isLiked, toggleLike } = useLibrary();
   const { isTrackCached, downloadTrack, isDownloading } = useCache();
+  const openContextMenu = useContextMenuStore((s) => s.openContextMenu);
 
   useEffect(() => {
     setImageError(false);
@@ -52,7 +54,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
       onClick={handleClick}
       onContextMenu={(e) => {
         e.preventDefault();
-        addToQueue(song);
+        openContextMenu({ x: e.clientX, y: e.clientY }, song);
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

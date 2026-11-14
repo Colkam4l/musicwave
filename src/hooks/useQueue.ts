@@ -151,6 +151,25 @@ export const useQueue = () => {
     await playSong(prevSong, { recordHistory: false });
   }, [currentSong, elapsedSeconds, seekTo, popHistory, setQueue, playSong]);
 
+  const skipToQueueIndex = useCallback(
+    async (index: number) => {
+      try {
+        const playedSong = await invoke<Song | null>("skip_to_queue_index", {
+          index,
+        });
+        const updated = await invoke<Song[]>("get_queue");
+        setQueue(updated);
+        if (playedSong) {
+          usePlayerStore.getState().setCurrentSong(playedSong);
+          usePlayerStore.getState().setIsPlaying(true);
+        }
+      } catch (err) {
+        console.error("Failed skipping to queue index:", err);
+      }
+    },
+    [setQueue]
+  );
+
   return {
     queue,
     history,
@@ -167,6 +186,7 @@ export const useQueue = () => {
     shuffleQueue,
     skipNext,
     skipPrev,
+    skipToQueueIndex,
   };
 };
 

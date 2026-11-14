@@ -115,8 +115,8 @@ export const LyricsSheet: React.FC<LyricsSheetProps> = () => {
                 color: isActive
                   ? "var(--md-sys-color-primary, #ffffff)"
                   : isPassed
-                  ? "var(--md-sys-color-on-surface-variant, rgba(255, 255, 255, 0.45))"
-                  : "rgba(255, 255, 255, 0.25)",
+                    ? "var(--md-sys-color-on-surface-variant, rgba(255, 255, 255, 0.45))"
+                    : "rgba(255, 255, 255, 0.25)",
                 transform: isActive ? "scale(1.025)" : "scale(1)",
                 transition: "all 0.3s cubic-bezier(0.2, 0, 0, 1)",
                 cursor: "pointer",

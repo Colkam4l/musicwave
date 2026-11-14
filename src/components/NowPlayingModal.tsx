@@ -61,13 +61,13 @@ export const NowPlayingModal: React.FC<NowPlayingModalProps> = ({
           position: "fixed",
           inset: 0,
           zIndex: 100,
-          backgroundColor: "#0d0e12",
+          backgroundColor: "var(--md-sys-color-surface, #0d0e12)",
           backgroundImage: currentSong.thumbnailUrl
-            ? `radial-gradient(circle at 50% 20%, rgba(30, 40, 70, 0.45), #0a0b0e 85%)`
+            ? `radial-gradient(ellipse 90% 65% at 50% 10%, var(--accent-glow, rgba(124, 58, 237, 0.35)) 0%, var(--md-sys-color-surface, #0a0b0e) 80%)`
             : undefined,
           display: "flex",
           flexDirection: "column",
-          color: "#ffffff",
+          color: "var(--md-sys-color-on-surface, #ffffff)",
           overflow: "hidden",
         }}
       >

@@ -1,6 +1,18 @@
 import React from "react";
-import { Play, Pause, SkipBack, SkipForward, Loader2, Shuffle, Repeat, Repeat1 } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Loader2,
+  Shuffle,
+  Repeat,
+  Repeat1,
+} from "lucide-react";
 import { RepeatMode } from "../types/music";
+import { M3Tokens } from "../theme/tokens";
+import { useThemeStore } from "../store/themeStore";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -39,6 +51,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   onCycleRepeat,
   onToggleShuffle,
 }) => {
+  const { reducedMotion } = useThemeStore();
   const handlePrev = onPrev ?? onSkipPrev;
   const handleNext = onNext ?? onSkipNext;
   const prevDisabled =
@@ -55,195 +68,184 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "0.6rem",
+        gap: "0.5rem",
         flexShrink: 0,
       }}
     >
-      {/* Shuffle Button (Optional) */}
+      {/* Shuffle Button with M3 Tonal Pill */}
       {onToggleShuffle && (
-        <button
+        <motion.button
           type="button"
           disabled={disabled}
           onClick={onToggleShuffle}
+          whileHover={disabled || reducedMotion ? undefined : { scale: 1.08 }}
+          whileTap={disabled || reducedMotion ? undefined : { scale: 0.92 }}
+          transition={M3Tokens.motion.tactilePress}
           title={isShuffled ? "Shuffle active" : "Shuffle queue"}
           style={{
             width: 38,
             height: 38,
-            borderRadius: "50%",
+            borderRadius: M3Tokens.shape.cornerFull,
             border: "none",
-            background: isShuffled ? "rgba(124, 58, 237, 0.2)" : "transparent",
-            color: isShuffled ? "#a855f7" : "var(--text-secondary)",
+            background: isShuffled
+              ? "var(--md-sys-color-secondary-container, #4a4458)"
+              : "transparent",
+            color: isShuffled
+              ? "var(--md-sys-color-on-secondary-container, #ffffff)"
+              : "var(--md-sys-color-on-surface-variant, #cac4d0)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: disabled ? "not-allowed" : "pointer",
-            transition: "var(--transition-fast)",
             outline: "none",
+            opacity: disabled ? 0.35 : 1,
+            transition: "background 0.2s ease, color 0.2s ease",
           }}
         >
           <Shuffle size={16} />
-        </button>
+        </motion.button>
       )}
 
-      {/* Previous Song */}
-      <button
+      {/* Previous Track */}
+      <motion.button
         type="button"
         disabled={prevDisabled}
         onClick={handlePrev}
+        whileHover={prevDisabled || reducedMotion ? undefined : { scale: 1.08 }}
+        whileTap={prevDisabled || reducedMotion ? undefined : { scale: 0.92 }}
+        transition={M3Tokens.motion.tactilePress}
         title="Previous"
         style={{
-          width: 44,
-          height: 44,
-          borderRadius: "50%",
+          width: 40,
+          height: 40,
+          borderRadius: M3Tokens.shape.cornerFull,
           border: "none",
           background: "transparent",
-          color: prevDisabled ? "var(--text-muted)" : "var(--text-secondary)",
+          color: prevDisabled
+            ? "var(--md-sys-color-outline, rgba(255, 255, 255, 0.2))"
+            : "var(--md-sys-color-on-surface, #ffffff)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           cursor: prevDisabled ? "not-allowed" : "pointer",
-          transition: "var(--transition-fast)",
           outline: "none",
           opacity: prevDisabled ? 0.4 : 1,
         }}
-        onMouseEnter={(e) => {
-          if (!prevDisabled) {
-            e.currentTarget.style.color = "var(--text-primary)";
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!prevDisabled) {
-            e.currentTarget.style.color = "var(--text-secondary)";
-            e.currentTarget.style.background = "transparent";
-          }
-        }}
       >
         <SkipBack size={19} />
-      </button>
+      </motion.button>
 
-      {/* Play / Pause Toggle Button */}
-      <button
+      {/* Play / Pause M3 Expressive Pill */}
+      <motion.button
         type="button"
         disabled={disabled}
         onClick={onTogglePlayPause}
+        whileHover={
+          disabled || reducedMotion
+            ? undefined
+            : { scale: 1.06, boxShadow: M3Tokens.elevation.level3 }
+        }
+        whileTap={disabled || reducedMotion ? undefined : { scale: 0.92 }}
+        transition={M3Tokens.motion.tactilePress}
         title={isBuffering ? "Buffering audio..." : isPlaying ? "Pause" : "Play"}
         style={{
-          width: 44,
-          height: 44,
-          borderRadius: "50%",
+          width: 48,
+          height: 48,
+          borderRadius: M3Tokens.shape.cornerFull,
           border: "none",
-          background: "var(--accent-gradient)",
-          color: "#ffffff",
+          background: "var(--md-sys-color-primary, #d0bcff)",
+          color: "var(--md-sys-color-on-primary, #381e72)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           cursor: disabled ? "not-allowed" : "pointer",
-          boxShadow: disabled
-            ? "none"
-            : "0 4px 16px rgba(124, 58, 237, 0.40)",
-          transition: "var(--transition-fast)",
+          boxShadow: disabled ? "none" : M3Tokens.elevation.level2,
           outline: "none",
           opacity: disabled ? 0.4 : 1,
-          transform: "scale(1)",
-        }}
-        onMouseEnter={(e) => {
-          if (!disabled) {
-            e.currentTarget.style.transform = "scale(1.06)";
-            e.currentTarget.style.boxShadow =
-              "0 6px 20px rgba(124, 58, 237, 0.55)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!disabled) {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow =
-              "0 4px 16px rgba(124, 58, 237, 0.40)";
-          }
+          transition: "background 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease",
         }}
       >
         {isBuffering ? (
-          <Loader2 size={20} color="#ffffff" className="animate-spin" />
+          <Loader2
+            size={22}
+            color="currentColor"
+            style={{ animation: "spin 1s linear infinite" }}
+          />
         ) : isPlaying ? (
-          <Pause size={20} fill="#ffffff" color="#ffffff" />
+          <Pause size={22} fill="currentColor" color="currentColor" />
         ) : (
           <Play
-            size={20}
-            fill="#ffffff"
-            color="#ffffff"
+            size={22}
+            fill="currentColor"
+            color="currentColor"
             style={{ marginLeft: 2 }}
           />
         )}
-      </button>
+      </motion.button>
 
-      {/* Next Song */}
-      <button
+      {/* Next Track */}
+      <motion.button
         type="button"
         disabled={nextDisabled}
         onClick={handleNext}
+        whileHover={nextDisabled || reducedMotion ? undefined : { scale: 1.08 }}
+        whileTap={nextDisabled || reducedMotion ? undefined : { scale: 0.92 }}
+        transition={M3Tokens.motion.tactilePress}
         title="Next"
         style={{
-          width: 44,
-          height: 44,
-          borderRadius: "50%",
+          width: 40,
+          height: 40,
+          borderRadius: M3Tokens.shape.cornerFull,
           border: "none",
           background: "transparent",
-          color: nextDisabled ? "var(--text-muted)" : "var(--text-secondary)",
+          color: nextDisabled
+            ? "var(--md-sys-color-outline, rgba(255, 255, 255, 0.2))"
+            : "var(--md-sys-color-on-surface, #ffffff)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           cursor: nextDisabled ? "not-allowed" : "pointer",
-          transition: "var(--transition-fast)",
           outline: "none",
           opacity: nextDisabled ? 0.4 : 1,
         }}
-        onMouseEnter={(e) => {
-          if (!nextDisabled) {
-            e.currentTarget.style.color = "var(--text-primary)";
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!nextDisabled) {
-            e.currentTarget.style.color = "var(--text-secondary)";
-            e.currentTarget.style.background = "transparent";
-          }
-        }}
       >
         <SkipForward size={19} />
-      </button>
+      </motion.button>
 
-      {/* Repeat Mode Button (Optional) */}
+      {/* Repeat Button with M3 Tonal Pill */}
       {onCycleRepeat && (
-        <button
+        <motion.button
           type="button"
           disabled={disabled}
           onClick={onCycleRepeat}
-          title={`Repeat mode: ${repeatMode ?? "off"}`}
+          whileHover={disabled || reducedMotion ? undefined : { scale: 1.08 }}
+          whileTap={disabled || reducedMotion ? undefined : { scale: 0.92 }}
+          transition={M3Tokens.motion.tactilePress}
+          title={`Repeat: ${repeatMode ?? "off"}`}
           style={{
             width: 38,
             height: 38,
-            borderRadius: "50%",
+            borderRadius: M3Tokens.shape.cornerFull,
             border: "none",
             background:
               repeatMode && repeatMode !== "off"
-                ? "rgba(124, 58, 237, 0.2)"
+                ? "var(--md-sys-color-secondary-container, #4a4458)"
                 : "transparent",
             color:
               repeatMode && repeatMode !== "off"
-                ? "#a855f7"
-                : "var(--text-secondary)",
+                ? "var(--md-sys-color-on-secondary-container, #ffffff)"
+                : "var(--md-sys-color-on-surface-variant, #cac4d0)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: disabled ? "not-allowed" : "pointer",
-            transition: "var(--transition-fast)",
             outline: "none",
-            position: "relative",
+            opacity: disabled ? 0.35 : 1,
+            transition: "background 0.2s ease, color 0.2s ease",
           }}
         >
           {repeatMode === "one" ? <Repeat1 size={17} /> : <Repeat size={16} />}
-        </button>
+        </motion.button>
       )}
     </div>
   );

@@ -26,6 +26,7 @@ import { AuthModal } from "./components/AuthModal";
 import { usePlayerEvents } from "./hooks/usePlayer";
 import { useQueue, useQueueSync } from "./hooks/useQueue";
 import { useLibrarySync } from "./hooks/useLibrary";
+import { useThemeSync } from "./hooks/useThemeSync";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { usePlatform } from "./hooks/usePlatform";
 
@@ -115,6 +116,7 @@ export const App: React.FC = () => {
   usePlayerEvents();
   useQueueSync();
   useLibrarySync();
+  useThemeSync();
 
   return (
     <HashRouter>

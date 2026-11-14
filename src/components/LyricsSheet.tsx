@@ -110,22 +110,22 @@ export const LyricsSheet: React.FC<LyricsSheetProps> = () => {
               ref={isActive ? activeLineRef : undefined}
               onClick={() => seekTo(line.time)}
               style={{
-                fontSize: isActive ? "22px" : "18px",
-                fontWeight: isActive ? 700 : 500,
+                fontSize: isActive ? "24px" : "18px",
+                fontWeight: isActive ? 800 : 500,
                 color: isActive
-                  ? "#ffffff"
+                  ? "var(--md-sys-color-primary, #ffffff)"
                   : isPassed
-                  ? "rgba(255, 255, 255, 0.45)"
+                  ? "var(--md-sys-color-on-surface-variant, rgba(255, 255, 255, 0.45))"
                   : "rgba(255, 255, 255, 0.25)",
-                transform: isActive ? "scale(1.02)" : "scale(1)",
+                transform: isActive ? "scale(1.025)" : "scale(1)",
                 transition: "all 0.3s cubic-bezier(0.2, 0, 0, 1)",
                 cursor: "pointer",
-                padding: "8px 12px",
-                borderRadius: "8px",
+                padding: "10px 16px",
+                borderRadius: "16px",
                 backgroundColor: isActive
-                  ? "rgba(255, 255, 255, 0.08)"
+                  ? "var(--md-sys-color-secondary-container, rgba(255, 255, 255, 0.08))"
                   : "transparent",
-                lineHeight: 1.4,
+                lineHeight: 1.45,
                 userSelect: "none",
               }}
               onMouseEnter={(e) => {

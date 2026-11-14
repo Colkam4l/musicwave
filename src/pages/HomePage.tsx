@@ -7,6 +7,10 @@ import { useLibrary } from "../hooks/useLibrary";
 import { usePlayer } from "../hooks/usePlayer";
 import { useRecommendations } from "../hooks/useRecommendations";
 import { Spinner } from "../components/Spinner";
+import { ExpressiveChip } from "../components/common/ExpressiveChip";
+import { ExpressiveButton } from "../components/common/ExpressiveButton";
+import { TonalCard } from "../components/common/TonalCard";
+import { M3Tokens } from "../theme/tokens";
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -92,32 +96,11 @@ export const HomePage: React.FC = () => {
             }}
           >
             {shelves.moods.slice(0, 12).map((mood, idx) => (
-              <button
+              <ExpressiveChip
                 key={`${mood.title}-${idx}`}
+                label={mood.title}
                 onClick={() => navigate(`/search?q=${encodeURIComponent(mood.title)}`)}
-                style={{
-                  background: "rgba(255, 255, 255, 0.06)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  color: "#ffffff",
-                  padding: "8px 18px",
-                  borderRadius: "20px",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(124, 58, 237, 0.35)";
-                  e.currentTarget.style.borderColor = "rgba(124, 58, 237, 0.6)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
-                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                }}
-              >
-                {mood.title}
-              </button>
+              />
             ))}
           </div>
         </div>
@@ -167,28 +150,19 @@ export const HomePage: React.FC = () => {
                 }}
               >
                 {displayedQuickPicks.slice(0, 8).map((song) => (
-                  <div
+                  <TonalCard
                     key={song.videoId}
+                    level="low"
+                    rounded="xl"
+                    interactive
                     onClick={() => playSong(song)}
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: "12px",
                       padding: "10px",
-                      borderRadius: "12px",
-                      background: "rgba(255, 255, 255, 0.04)",
-                      border: "1px solid rgba(255, 255, 255, 0.06)",
                       cursor: "pointer",
-                      transition: "all 0.2s cubic-bezier(0.2, 0, 0, 1)",
                       position: "relative",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.09)";
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.04)";
-                      e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
                     <div
@@ -196,7 +170,7 @@ export const HomePage: React.FC = () => {
                         position: "relative",
                         width: "56px",
                         height: "56px",
-                        borderRadius: "8px",
+                        borderRadius: "10px",
                         overflow: "hidden",
                         flexShrink: 0,
                       }}
@@ -219,6 +193,7 @@ export const HomePage: React.FC = () => {
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           marginBottom: "3px",
+                          color: "var(--md-sys-color-on-surface, #e6e0ea)",
                         }}
                       >
                         {song.title}
@@ -226,7 +201,7 @@ export const HomePage: React.FC = () => {
                       <div
                         style={{
                           fontSize: "12px",
-                          color: "rgba(255, 255, 255, 0.6)",
+                          color: "var(--md-sys-color-on-surface-variant, #cac4d0)",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -245,7 +220,7 @@ export const HomePage: React.FC = () => {
                       style={{
                         background: "none",
                         border: "none",
-                        color: "rgba(255,255,255,0.4)",
+                        color: "var(--md-sys-color-on-surface-variant, rgba(255,255,255,0.5))",
                         cursor: "pointer",
                         padding: "6px",
                         display: "flex",
@@ -253,7 +228,7 @@ export const HomePage: React.FC = () => {
                     >
                       <Radio size={16} />
                     </button>
-                  </div>
+                  </TonalCard>
                 ))}
               </div>
             </section>
@@ -286,27 +261,18 @@ export const HomePage: React.FC = () => {
                 }}
               >
                 {shelves.trending.items.slice(0, 10).map((song, idx) => (
-                  <div
+                  <TonalCard
                     key={song.videoId}
+                    level="low"
+                    rounded="xl"
+                    interactive
                     onClick={() => playSong(song)}
                     style={{
                       display: "flex",
                       flexDirection: "column",
                       padding: "12px",
-                      borderRadius: "16px",
-                      background: "rgba(255, 255, 255, 0.03)",
-                      border: "1px solid rgba(255, 255, 255, 0.05)",
                       cursor: "pointer",
-                      transition: "all 0.25s cubic-bezier(0.2, 0, 0, 1)",
                       position: "relative",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
-                      e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
                     <div
@@ -314,7 +280,7 @@ export const HomePage: React.FC = () => {
                         position: "relative",
                         width: "100%",
                         aspectRatio: "1",
-                        borderRadius: "12px",
+                        borderRadius: "14px",
                         overflow: "hidden",
                         marginBottom: "12px",
                         boxShadow: "0 8px 16px rgba(0, 0, 0, 0.4)",
@@ -332,12 +298,12 @@ export const HomePage: React.FC = () => {
                           position: "absolute",
                           top: "8px",
                           left: "8px",
-                          background: "rgba(0, 0, 0, 0.7)",
-                          color: "#fff",
+                          background: "var(--md-sys-color-surface-container-highest, rgba(0, 0, 0, 0.75))",
+                          color: "var(--md-sys-color-primary, #d0bcff)",
                           fontSize: "11px",
                           fontWeight: 700,
-                          padding: "2px 8px",
-                          borderRadius: "10px",
+                          padding: "3px 8px",
+                          borderRadius: M3Tokens.shape.cornerFull,
                         }}
                       >
                         #{idx + 1}
@@ -352,6 +318,7 @@ export const HomePage: React.FC = () => {
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         marginBottom: "4px",
+                        color: "var(--md-sys-color-on-surface, #e6e0ea)",
                       }}
                       title={song.title}
                     >
@@ -360,7 +327,7 @@ export const HomePage: React.FC = () => {
                     <div
                       style={{
                         fontSize: "12px",
-                        color: "rgba(255, 255, 255, 0.6)",
+                        color: "var(--md-sys-color-on-surface-variant, #cac4d0)",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -369,7 +336,7 @@ export const HomePage: React.FC = () => {
                     >
                       {song.artist}
                     </div>
-                  </div>
+                  </TonalCard>
                 ))}
               </div>
             </section>
@@ -379,42 +346,44 @@ export const HomePage: React.FC = () => {
           <section
             style={{
               padding: "28px 36px",
-              borderRadius: "24px",
-              background:
-                "linear-gradient(135deg, rgba(124, 58, 237, 0.25) 0%, rgba(236, 72, 153, 0.15) 100%)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: M3Tokens.shape.cornerExtraLarge,
+              background: "var(--md-sys-color-surface-container-high, #272332)",
+              border: "1px solid var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.1))",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              boxShadow: M3Tokens.elevation.level2,
             }}
           >
             <div>
-              <h3 style={{ margin: "0 0 6px", fontSize: "20px", fontWeight: 700 }}>
+              <h3
+                style={{
+                  margin: "0 0 6px",
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: "var(--md-sys-color-on-surface, #e6e0ea)",
+                }}
+              >
                 Looking for something specific?
               </h3>
-              <p style={{ margin: 0, fontSize: "14px", color: "rgba(255, 255, 255, 0.7)" }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "14px",
+                  color: "var(--md-sys-color-on-surface-variant, #cac4d0)",
+                }}
+              >
                 Search millions of songs, albums, artists, and live performances.
               </p>
             </div>
-            <button
+            <ExpressiveButton
+              variant="filled"
+              size="md"
               onClick={() => navigate("/search")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                background: "#ffffff",
-                border: "none",
-                color: "#0a0b0e",
-                padding: "10px 22px",
-                borderRadius: "20px",
-                fontSize: "14px",
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
-              }}
+              icon={<Compass size={16} />}
             >
-              <Compass size={16} /> Explore Search
-            </button>
+              Explore Search
+            </ExpressiveButton>
           </section>
         </>
       )}

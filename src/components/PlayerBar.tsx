@@ -8,6 +8,7 @@ import { NowPlayingModal } from "./NowPlayingModal";
 import { usePlayer } from "../hooks/usePlayer";
 import { useQueue } from "../hooks/useQueue";
 import { usePlayerStore } from "../store/playerStore";
+import { M3Tokens } from "../theme/tokens";
 
 export const PlayerBar: React.FC = () => {
   const {
@@ -47,18 +48,19 @@ export const PlayerBar: React.FC = () => {
           right: 0,
           height: 80,
           zIndex: 100,
-          /* Glassmorphism recipe from CLAUDE.md */
-          background: "rgba(12, 12, 12, 0.72)",
-          backdropFilter: "blur(28px) saturate(180%)",
-          WebkitBackdropFilter: "blur(28px) saturate(180%)",
-          borderTop: "1px solid rgba(255, 255, 255, 0.13)",
-          boxShadow: "0 -4px 32px rgba(0, 0, 0, 0.6)",
+          /* M3 Expressive Tonal Surface Container */
+          background: "var(--md-sys-color-surface-container, #1e1b27)",
+          borderTop:
+            "1px solid var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.08))",
+          boxShadow: M3Tokens.elevation.level3,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 1.5rem",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
           gap: "1.25rem",
+          transition:
+            "background 0.3s cubic-bezier(0.2, 0, 0, 1), border-color 0.3s ease",
         }}
       >
         {/* Left: Now Playing Song Info */}
@@ -89,19 +91,30 @@ export const PlayerBar: React.FC = () => {
         />
 
         {/* Right: Queue Toggle & Volume Control */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            flexShrink: 0,
+          }}
+        >
           <button
             type="button"
             onClick={toggleQueueOpen}
             title="Toggle Queue"
             style={{
               position: "relative",
-              width: 38,
-              height: 38,
-              borderRadius: "var(--radius-sm)",
+              width: 40,
+              height: 40,
+              borderRadius: M3Tokens.shape.cornerFull,
               border: "none",
-              background: isQueueOpen ? "rgba(124, 58, 237, 0.2)" : "transparent",
-              color: isQueueOpen ? "var(--accent-rose)" : "var(--text-secondary)",
+              background: isQueueOpen
+                ? "var(--md-sys-color-secondary-container, rgba(124, 58, 237, 0.2))"
+                : "transparent",
+              color: isQueueOpen
+                ? "var(--md-sys-color-on-secondary-container, var(--accent-rose))"
+                : "var(--md-sys-color-on-surface-variant, var(--text-secondary))",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -109,19 +122,20 @@ export const PlayerBar: React.FC = () => {
               transition: "var(--transition-fast)",
             }}
           >
-            <ListMusic size={18} />
+            <ListMusic size={19} />
             {queue.length > 0 && (
               <span
                 style={{
                   position: "absolute",
-                  top: 3,
-                  right: 3,
+                  top: 4,
+                  right: 4,
                   minWidth: 15,
                   height: 15,
                   padding: "0 4px",
-                  borderRadius: "var(--radius-full)",
-                  background: "var(--accent-violet)",
-                  color: "#ffffff",
+                  borderRadius: M3Tokens.shape.cornerFull,
+                  background:
+                    "var(--md-sys-color-primary, var(--accent-violet))",
+                  color: "var(--md-sys-color-on-primary, #ffffff)",
                   fontSize: "0.6rem",
                   fontWeight: 700,
                   display: "flex",

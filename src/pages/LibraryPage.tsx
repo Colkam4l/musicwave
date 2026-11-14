@@ -5,6 +5,8 @@ import { useLibrary } from "../hooks/useLibrary";
 import { useCache } from "../hooks/useCache";
 import { SongCard } from "../components/SongCard";
 import { Spinner } from "../components/Spinner";
+import { TonalCard } from "../components/common/TonalCard";
+import { M3Tokens } from "../theme/tokens";
 
 export const LibraryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -103,20 +105,20 @@ export const LibraryPage: React.FC = () => {
             display: "flex",
             gap: "8px",
             marginTop: "1.25rem",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
             paddingBottom: "8px",
+            overflowX: "auto",
           }}
         >
           <button
             onClick={() => setActiveTab("playlists")}
             style={{
-              background: activeTab === "playlists" ? "rgba(124, 58, 237, 0.2)" : "transparent",
-              color: activeTab === "playlists" ? "var(--accent-rose)" : "var(--text-secondary)",
-              border: "none",
-              padding: "6px 16px",
-              borderRadius: "16px",
+              background: activeTab === "playlists" ? "var(--md-sys-color-secondary-container, #4a4458)" : "var(--md-sys-color-surface-container, #1e1b27)",
+              color: activeTab === "playlists" ? "var(--md-sys-color-on-secondary-container, #e8def8)" : "var(--md-sys-color-on-surface-variant, #cac4d0)",
+              border: activeTab === "playlists" ? "1px solid transparent" : "1px solid var(--md-sys-color-outline-variant, rgba(255,255,255,0.08))",
+              padding: "7px 18px",
+              borderRadius: M3Tokens.shape.cornerFull,
               fontWeight: 600,
-              fontSize: "14px",
+              fontSize: "13px",
               cursor: "pointer",
               transition: "all 0.2s",
             }}
@@ -126,13 +128,13 @@ export const LibraryPage: React.FC = () => {
           <button
             onClick={() => setActiveTab("liked")}
             style={{
-              background: activeTab === "liked" ? "rgba(124, 58, 237, 0.2)" : "transparent",
-              color: activeTab === "liked" ? "var(--accent-rose)" : "var(--text-secondary)",
-              border: "none",
-              padding: "6px 16px",
-              borderRadius: "16px",
+              background: activeTab === "liked" ? "var(--md-sys-color-secondary-container, #4a4458)" : "var(--md-sys-color-surface-container, #1e1b27)",
+              color: activeTab === "liked" ? "var(--md-sys-color-on-secondary-container, #e8def8)" : "var(--md-sys-color-on-surface-variant, #cac4d0)",
+              border: activeTab === "liked" ? "1px solid transparent" : "1px solid var(--md-sys-color-outline-variant, rgba(255,255,255,0.08))",
+              padding: "7px 18px",
+              borderRadius: M3Tokens.shape.cornerFull,
               fontWeight: 600,
-              fontSize: "14px",
+              fontSize: "13px",
               cursor: "pointer",
               transition: "all 0.2s",
             }}
@@ -142,13 +144,13 @@ export const LibraryPage: React.FC = () => {
           <button
             onClick={() => setActiveTab("recents")}
             style={{
-              background: activeTab === "recents" ? "rgba(124, 58, 237, 0.2)" : "transparent",
-              color: activeTab === "recents" ? "var(--accent-rose)" : "var(--text-secondary)",
-              border: "none",
-              padding: "6px 16px",
-              borderRadius: "16px",
+              background: activeTab === "recents" ? "var(--md-sys-color-secondary-container, #4a4458)" : "var(--md-sys-color-surface-container, #1e1b27)",
+              color: activeTab === "recents" ? "var(--md-sys-color-on-secondary-container, #e8def8)" : "var(--md-sys-color-on-surface-variant, #cac4d0)",
+              border: activeTab === "recents" ? "1px solid transparent" : "1px solid var(--md-sys-color-outline-variant, rgba(255,255,255,0.08))",
+              padding: "7px 18px",
+              borderRadius: M3Tokens.shape.cornerFull,
               fontWeight: 600,
-              fontSize: "14px",
+              fontSize: "13px",
               cursor: "pointer",
               transition: "all 0.2s",
             }}
@@ -158,13 +160,13 @@ export const LibraryPage: React.FC = () => {
           <button
             onClick={() => setActiveTab("offline")}
             style={{
-              background: activeTab === "offline" ? "rgba(16, 185, 129, 0.2)" : "transparent",
-              color: activeTab === "offline" ? "#10b981" : "var(--text-secondary)",
-              border: "none",
-              padding: "6px 16px",
-              borderRadius: "16px",
+              background: activeTab === "offline" ? "var(--md-sys-color-secondary-container, #4a4458)" : "var(--md-sys-color-surface-container, #1e1b27)",
+              color: activeTab === "offline" ? "var(--md-sys-color-on-secondary-container, #e8def8)" : "var(--md-sys-color-on-surface-variant, #cac4d0)",
+              border: activeTab === "offline" ? "1px solid transparent" : "1px solid var(--md-sys-color-outline-variant, rgba(255,255,255,0.08))",
+              padding: "7px 18px",
+              borderRadius: M3Tokens.shape.cornerFull,
               fontWeight: 600,
-              fontSize: "14px",
+              fontSize: "13px",
               cursor: "pointer",
               transition: "all 0.2s",
               display: "flex",
@@ -172,7 +174,7 @@ export const LibraryPage: React.FC = () => {
               gap: "6px",
             }}
           >
-            <CheckCircle2 size={15} color={activeTab === "offline" ? "#10b981" : "currentColor"} />
+            <CheckCircle2 size={15} color={activeTab === "offline" ? "var(--md-sys-color-primary, #10b981)" : "currentColor"} />
             <span>Downloaded ({stats.trackCount})</span>
           </button>
         </div>
@@ -378,35 +380,26 @@ export const LibraryPage: React.FC = () => {
               }}
             >
               {filteredPlaylists.map((pl) => (
-                <div
+                <TonalCard
                   key={pl.id}
+                  level="low"
+                  rounded="xl"
+                  interactive
                   onClick={() => navigate(`/playlist/${pl.id}`)}
                   style={{
-                    background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(255, 255, 255, 0.06)",
-                    borderRadius: "16px",
                     padding: "16px",
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
-                    transition: "all 0.2s",
                     position: "relative",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
-                    e.currentTarget.style.transform = "translateY(-3px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
-                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
                   <div
                     style={{
                       width: "100%",
                       aspectRatio: "1",
-                      borderRadius: "12px",
-                      background: "rgba(255, 255, 255, 0.05)",
+                      borderRadius: "14px",
+                      background: "var(--md-sys-color-surface-container, rgba(255, 255, 255, 0.05))",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -458,10 +451,10 @@ export const LibraryPage: React.FC = () => {
                   <div style={{ fontWeight: 700, fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {pl.name}
                   </div>
-                  <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginTop: "4px" }}>
+                  <div style={{ fontSize: "12px", color: "var(--md-sys-color-on-surface-variant, rgba(255,255,255,0.5))", marginTop: "4px" }}>
                     {pl.tracks.length} tracks
                   </div>
-                </div>
+                </TonalCard>
               ))}
             </div>
           )}

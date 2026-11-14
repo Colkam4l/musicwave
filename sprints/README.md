@@ -37,7 +37,7 @@ The implementing agent **must** update the `End-of-Sprint Report` section and co
 | [5](./SPRINT-5.md) | Android Port (Tauri Mobile) | `feature/sprint-5-android` | ✅ Complete (UI/Config) |
 | [6](./SPRINT-6.md) | Core Streaming Features & Discovery | `feature/sprint-6-core-features` | ✅ Complete |
 | [7](./SPRINT-7.md) | Dual Authentication & Account Sync | `feature/sprint-7-auth-sync` | ✅ Complete |
-| [8](./SPRINT-8.md) | Material Expressive Redesign | `feature/sprint-8-material-expressive` | ⏳ Planned |
+| [8](./SPRINT-8.md) | Material Expressive Redesign | `feature/sprint-8-material-expressive` | ✅ Complete |
 
 ---
 

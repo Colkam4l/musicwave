@@ -68,17 +68,17 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
         alignItems: "center",
         gap: "1rem",
         padding: "0.6rem 1rem",
-        borderRadius: "var(--radius-md)",
+        borderRadius: "16px",
         background: isCurrentSong
-          ? "rgba(124, 58, 237, 0.12)"
+          ? "var(--md-sys-color-secondary-container, rgba(124, 58, 237, 0.16))"
           : isHovered
-            ? "var(--bg-surface-hover)"
+            ? "var(--md-sys-color-surface-container-high, rgba(255, 255, 255, 0.06))"
             : "transparent",
         cursor: "pointer",
-        transition: "background var(--transition-fast), border-color var(--transition-fast)",
+        transition: "background 0.2s ease, border-color 0.2s ease, transform 0.15s ease",
         outline: "none",
         border: isCurrentSong
-          ? "1px solid rgba(124, 58, 237, 0.28)"
+          ? "1px solid var(--md-sys-color-outline, rgba(124, 58, 237, 0.3))"
           : "1px solid transparent",
       }}
     >
@@ -90,16 +90,16 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
           fontSize: "var(--font-size-sm)",
           color:
             isCurrentSong || isHovered
-              ? "var(--accent-rose)"
-              : "var(--text-muted)",
+              ? "var(--md-sys-color-primary, var(--accent-rose))"
+              : "var(--md-sys-color-on-surface-variant, var(--text-muted))",
           fontWeight: 600,
           flexShrink: 0,
         }}
       >
         {isCurrentSong && isPlaying ? (
-          <Pause size={16} fill="var(--accent-rose)" color="var(--accent-rose)" />
+          <Pause size={16} fill="var(--md-sys-color-primary, var(--accent-rose))" color="var(--md-sys-color-primary, var(--accent-rose))" />
         ) : isHovered || isCurrentSong ? (
-          <Play size={16} fill="var(--accent-rose)" color="var(--accent-rose)" />
+          <Play size={16} fill="var(--md-sys-color-primary, var(--accent-rose))" color="var(--md-sys-color-primary, var(--accent-rose))" />
         ) : (
           index + 1
         )}
@@ -111,9 +111,9 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
         style={{
           width: 48,
           height: 48,
-          borderRadius: "var(--radius-sm)",
+          borderRadius: "10px",
           overflow: "hidden",
-          background: "var(--bg-surface-elevated)",
+          background: "var(--md-sys-color-surface-container, #222)",
           position: "relative",
           flexShrink: 0,
           display: "flex",

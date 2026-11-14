@@ -18,9 +18,10 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 *   **Sprint 5 — Android Port (Tauri Mobile):** Implemented mobile-responsive navigation (`BottomNav`, `MobilePlayerBar`, `FullScreenPlayer`, `mobile.css`), platform detection (`usePlatform.ts`), `tauri-plugin-os`, Android `minSdkVersion: 24`, and mobile conditional feature gating.
 *   **Sprint 6 — Core Streaming Features & Discovery Experience:** Implemented Home discovery shelves (`/`) with Quick Picks, Trending Charts (#1–#10), and mood pill filters; dedicated Search page (`/search`); expandable `NowPlayingModal` and `FullScreenPlayer` lyrics sheet with LRCLIB timestamped synchronized lyrics; Auto-Queue recommendation engine via YouTube Music Watch Playlist radio; Repeat (`Off`, `All`, `One`) and Shuffle playback modes; custom user playlist creation, management, and track ordering (`library.json`).
 *   **Sprint 7 — Dual Authentication & Account Sync:** Implemented standalone local user profiles (`auth.rs`, `profiles.json`), two-way YouTube Music cloud library sync (`sync.rs`, liked songs & cloud playlists), and encrypted/decrypted stream disk caching (`cache.rs`, `~/.local/share/musicwave/cache/tracks/`) for 100% offline playback. Built `AuthModal`, `ProfileMenu`, `OfflineBadge`, offline download button on `SongCard`, Downloaded tab on `LibraryPage`, and cache storage manager on `SettingsPage`.
+*   **Sprint 8 — Material 3 Expressive Design Overhaul:** Overhauled the application design from legacy dark glassmorphism to Google Material 3 Expressive (M3 Expressive). Implemented dynamic Material You palette extraction from playing track album artwork (`palette.ts`, canvas quantizer) with 6 fallback presets; M3 design tokens (`tokens.ts`, elevation matrices, cornerFull/cornerExtraLarge, spring physics); live CSS variable injector (`dynamicTheme.ts`); theme store (`themeStore.ts`); common M3 components (`ExpressiveButton`, `ExpressiveChip`, `TonalCard`); animated floating navigation indicator pills in `Sidebar` and `BottomNav`; tactile 48px play/pause pill and tonal repeat/shuffle states in `PlayerBar` and `PlaybackControls`; dynamic ambient radial backdrop in `NowPlayingModal` and `LyricsSheet`; and full Appearance & Expressive Theme controls in `SettingsPage`.
 
 ### Active Sprint
-*   **Sprint 7 complete; ready for Sprint 8 (Material Expressive Redesign).**
+*   **Sprint 8 complete; all scheduled sprints 0–8 are complete.**
 
 ### Sprints Overview
 | Sprint | Name | Status |
@@ -33,7 +34,7 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 | [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | ✅ Complete (UI/Config) |
 | [6](./sprints/SPRINT-6.md) | Core Streaming Features & Discovery | ✅ Complete |
 | [7](./sprints/SPRINT-7.md) | Dual Authentication & Account Sync | ✅ Complete |
-| [8](./sprints/SPRINT-8.md) | Material Expressive Redesign | ⏳ Planned |
+| [8](./sprints/SPRINT-8.md) | Material Expressive Redesign | ✅ Complete |
 
 ---
 

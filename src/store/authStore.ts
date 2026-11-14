@@ -33,3 +33,4 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAuthModalOpen: (isAuthModalOpen) => set({ isAuthModalOpen }),
   setLoading: (isLoading) => set({ isLoading }),
 }));
+

@@ -25,3 +25,4 @@ export const useCacheStore = create<CacheState>((set) => ({
     })),
   setIsOffline: (isOffline) => set({ isOffline }),
 }));
+

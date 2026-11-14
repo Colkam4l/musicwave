@@ -15,12 +15,16 @@ import {
   HardDriveDownload,
   Trash2,
   ShieldCheck,
+  Palette,
+  Sparkles,
 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { usePlatform } from "../hooks/usePlatform";
 import { useAuth } from "../hooks/useAuth";
 import { useSync } from "../hooks/useSync";
 import { useCache } from "../hooks/useCache";
+import { useThemeStore } from "../store/themeStore";
+import { PRESET_THEMES, PresetThemeName } from "../theme/palette";
 
 interface AppSettings {
   cookie: string | null;
@@ -61,6 +65,14 @@ export const SettingsPage: React.FC = () => {
   const { activeProfile, openAuthModal, disconnectYoutubeAccount } = useAuth();
   const { syncLibrary, isSyncing } = useSync();
   const { stats, clearCache } = useCache();
+  const {
+    themeMode,
+    selectedPreset,
+    reducedMotion,
+    setThemeMode,
+    setSelectedPreset,
+    setReducedMotion,
+  } = useThemeStore();
 
   const [cookie, setCookie] = useState("");
   const [userAgent, setUserAgent] = useState("");
@@ -357,6 +369,233 @@ export const SettingsPage: React.FC = () => {
               <span>Link Account</span>
             </button>
           )}
+        </div>
+      </section>
+
+      {/* Appearance & Material Expressive Theming */}
+      <section
+        style={{
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--radius-lg)",
+          padding: "1.5rem",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginBottom: "0.5rem",
+          }}
+        >
+          <Palette size={18} style={{ color: "var(--accent)" }} />
+          <h2
+            style={{
+              margin: 0,
+              fontSize: "var(--font-size-md)",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+            }}
+          >
+            Appearance & Expressive Theme
+          </h2>
+        </div>
+
+        <p
+          style={{
+            margin: "0 0 1.25rem",
+            color: "var(--text-secondary)",
+            fontSize: "var(--font-size-sm)",
+            lineHeight: 1.5,
+          }}
+        >
+          Google Material 3 Expressive dynamically harmonizes your player and interface with album art or curated tonal presets.
+        </p>
+
+        {/* Dynamic Color Toggle */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "1rem",
+            borderRadius: "var(--radius-md)",
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+            marginBottom: "1.25rem",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                background: "var(--accent-gradient)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+              }}
+            >
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
+                Dynamic Color from Album Art
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                Extract and harmonize interface tones in real time with the active playing track
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setThemeMode(themeMode === "dynamic" ? "preset" : "dynamic")}
+            style={{
+              width: "48px",
+              height: "26px",
+              borderRadius: "13px",
+              background: themeMode === "dynamic" ? "var(--md-sys-color-primary, #d0bcff)" : "rgba(255, 255, 255, 0.2)",
+              border: "none",
+              cursor: "pointer",
+              position: "relative",
+              transition: "background 0.25s ease",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "3px",
+                left: themeMode === "dynamic" ? "25px" : "3px",
+                width: "20px",
+                height: "20px",
+                borderRadius: "50%",
+                background: themeMode === "dynamic" ? "var(--md-sys-color-on-primary, #381e72)" : "#ffffff",
+                transition: "left 0.25s cubic-bezier(0.2, 0, 0, 1)",
+              }}
+            />
+          </button>
+        </div>
+
+        {/* Curated Tonal Presets */}
+        <div style={{ marginBottom: "1.25rem" }}>
+          <div style={{ ...fieldLabelStyle, marginBottom: "0.6rem" }}>
+            Curated Color Presets {themeMode === "dynamic" && "(Used when no track is playing)"}
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+              gap: "10px",
+            }}
+          >
+            {(Object.keys(PRESET_THEMES) as PresetThemeName[]).map((key) => {
+              const preset = PRESET_THEMES[key];
+              const isSelected = selectedPreset === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSelectedPreset(key)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "14px",
+                    background: isSelected
+                      ? "var(--md-sys-color-secondary-container, rgba(255, 255, 255, 0.12))"
+                      : "rgba(255, 255, 255, 0.04)",
+                    border: isSelected
+                      ? "1.5px solid var(--md-sys-color-primary, #d0bcff)"
+                      : "1px solid rgba(255, 255, 255, 0.08)",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      background: preset.primary,
+                      border: "2px solid rgba(255, 255, 255, 0.2)",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: isSelected ? 700 : 500,
+                        color: "var(--text-primary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {preset.name}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Reduced Motion Toggle */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "1rem",
+            borderRadius: "var(--radius-md)",
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>
+              Reduced Motion
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+              Minimize expressive spring physics and bouncy micro-interactions
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setReducedMotion(!reducedMotion)}
+            style={{
+              width: "48px",
+              height: "26px",
+              borderRadius: "13px",
+              background: reducedMotion ? "var(--md-sys-color-primary, #d0bcff)" : "rgba(255, 255, 255, 0.2)",
+              border: "none",
+              cursor: "pointer",
+              position: "relative",
+              transition: "background 0.25s ease",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "3px",
+                left: reducedMotion ? "25px" : "3px",
+                width: "20px",
+                height: "20px",
+                borderRadius: "50%",
+                background: reducedMotion ? "var(--md-sys-color-on-primary, #381e72)" : "#ffffff",
+                transition: "left 0.25s cubic-bezier(0.2, 0, 0, 1)",
+              }}
+            />
+          </button>
         </div>
       </section>
 

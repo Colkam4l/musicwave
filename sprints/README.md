@@ -34,7 +34,10 @@ The implementing agent **must** update the `End-of-Sprint Report` section and co
 | [2](./SPRINT-2.md) | Audio Playback & Player Bar | `feature/sprint-2-player-bar` | ✅ Complete |
 | [3](./SPRINT-3.md) | Queue, Library & Navigation | `feature/sprint-3-queue-library-navigation` | ✅ Complete |
 | [4](./SPRINT-4.md) | Polish, Settings & Auth UX | `feature/sprint-4-polish-settings` | ✅ Complete |
-| [5](./SPRINT-5.md) | Android Port (Tauri Mobile) | `feature/sprint-5-android` | 🚧 In Progress |
+| [5](./SPRINT-5.md) | Android Port (Tauri Mobile) | `feature/sprint-5-android` | ✅ Complete (UI/Config) |
+| [6](./SPRINT-6.md) | Core Streaming Features & Discovery | `feature/sprint-6-core-features` | ⏳ Active |
+| 7 | Dual Authentication & Account Sync | `feature/sprint-7-auth-sync` | ⏳ Planned |
+| 8 | Material Expressive Redesign | `feature/sprint-8-material-expressive` | ⏳ Planned |
 
 ---
 

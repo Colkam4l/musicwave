@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SearchBar } from "../components/SearchBar";
 import { SongList } from "../components/SongList";
 import { useSearch } from "../hooks/useSearch";
@@ -6,6 +7,9 @@ import { usePlayer } from "../hooks/usePlayer";
 import { Song } from "../types/music";
 
 export const SearchPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const urlQuery = searchParams.get("q");
+
   const {
     query,
     results,
@@ -16,6 +20,12 @@ export const SearchPage: React.FC = () => {
     clearSearch,
   } = useSearch();
   const { playSong } = usePlayer();
+
+  useEffect(() => {
+    if (urlQuery && urlQuery.trim() && urlQuery !== query) {
+      void search(urlQuery.trim());
+    }
+  }, [urlQuery, search, query]);
 
   const handleSelectSong = (song: Song) => {
     playSong(song);

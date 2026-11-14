@@ -4,16 +4,47 @@ use std::collections::VecDeque;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
+use std::time::SystemTime;
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
 
 pub const MAX_RECENT_PLAYS: usize = 50;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserPlaylist {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_at: u64,
+    pub updated_at: u64,
+    pub tracks: Vec<SongResult>,
+}
+
+fn current_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+fn generate_playlist_id() -> String {
+    let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    format!("pl_{:x}", now)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Library {
+    #[serde(default)]
     pub liked_songs: Vec<SongResult>,
+    #[serde(default)]
     pub recent_plays: VecDeque<SongResult>,
+    #[serde(default)]
+    pub playlists: Vec<UserPlaylist>,
 }
 
 static LIBRARY_CACHE: LazyLock<Mutex<Option<Library>>> = LazyLock::new(|| Mutex::new(None));
@@ -158,6 +189,136 @@ pub async fn get_recent_plays(app_handle: &AppHandle) -> anyhow::Result<Vec<Song
     with_library_read(app_handle, |lib| lib.recent_plays.iter().cloned().collect()).await
 }
 
+pub async fn create_playlist(
+    app_handle: &AppHandle,
+    name: String,
+    description: Option<String>,
+) -> anyhow::Result<UserPlaylist> {
+    with_library_mut(app_handle, |lib| {
+        let now = current_timestamp();
+        let playlist = UserPlaylist {
+            id: generate_playlist_id(),
+            name,
+            description,
+            created_at: now,
+            updated_at: now,
+            tracks: Vec::new(),
+        };
+        lib.playlists.push(playlist.clone());
+        playlist
+    })
+    .await
+}
+
+pub async fn delete_playlist(
+    app_handle: &AppHandle,
+    playlist_id: &str,
+) -> anyhow::Result<Vec<UserPlaylist>> {
+    with_library_mut(app_handle, |lib| {
+        lib.playlists.retain(|p| p.id != playlist_id);
+        lib.playlists.clone()
+    })
+    .await
+}
+
+pub async fn rename_playlist(
+    app_handle: &AppHandle,
+    playlist_id: &str,
+    name: String,
+    description: Option<String>,
+) -> anyhow::Result<UserPlaylist> {
+    with_library_mut(app_handle, |lib| {
+        let p = lib
+            .playlists
+            .iter_mut()
+            .find(|p| p.id == playlist_id)
+            .ok_or_else(|| anyhow::anyhow!("Playlist not found"))?;
+        p.name = name;
+        if description.is_some() {
+            p.description = description;
+        }
+        p.updated_at = current_timestamp();
+        Ok(p.clone())
+    })
+    .await?
+}
+
+pub async fn add_to_playlist(
+    app_handle: &AppHandle,
+    playlist_id: &str,
+    song: SongResult,
+) -> anyhow::Result<UserPlaylist> {
+    with_library_mut(app_handle, |lib| {
+        let p = lib
+            .playlists
+            .iter_mut()
+            .find(|p| p.id == playlist_id)
+            .ok_or_else(|| anyhow::anyhow!("Playlist not found"))?;
+        // Retain duplicate check: if track already in playlist, move to end or keep
+        if !p.tracks.iter().any(|t| t.video_id == song.video_id) {
+            p.tracks.push(song);
+        }
+        p.updated_at = current_timestamp();
+        Ok(p.clone())
+    })
+    .await?
+}
+
+pub async fn remove_from_playlist(
+    app_handle: &AppHandle,
+    playlist_id: &str,
+    video_id: &str,
+) -> anyhow::Result<UserPlaylist> {
+    with_library_mut(app_handle, |lib| {
+        let p = lib
+            .playlists
+            .iter_mut()
+            .find(|p| p.id == playlist_id)
+            .ok_or_else(|| anyhow::anyhow!("Playlist not found"))?;
+        p.tracks.retain(|t| t.video_id != video_id);
+        p.updated_at = current_timestamp();
+        Ok(p.clone())
+    })
+    .await?
+}
+
+pub async fn reorder_playlist(
+    app_handle: &AppHandle,
+    playlist_id: &str,
+    from_index: usize,
+    to_index: usize,
+) -> anyhow::Result<UserPlaylist> {
+    with_library_mut(app_handle, |lib| {
+        let p = lib
+            .playlists
+            .iter_mut()
+            .find(|p| p.id == playlist_id)
+            .ok_or_else(|| anyhow::anyhow!("Playlist not found"))?;
+        let len = p.tracks.len();
+        if from_index < len && to_index < len && from_index != to_index {
+            let item = p.tracks.remove(from_index);
+            p.tracks.insert(to_index, item);
+            p.updated_at = current_timestamp();
+        }
+        Ok(p.clone())
+    })
+    .await?
+}
+
+pub async fn get_playlists(app_handle: &AppHandle) -> anyhow::Result<Vec<UserPlaylist>> {
+    with_library_read(app_handle, |lib| lib.playlists.clone()).await
+}
+
+pub async fn get_playlist(
+    app_handle: &AppHandle,
+    playlist_id: &str,
+) -> anyhow::Result<Option<UserPlaylist>> {
+    with_library_read(app_handle, |lib| {
+        lib.playlists.iter().find(|p| p.id == playlist_id).cloned()
+    })
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,6 +365,23 @@ mod tests {
         assert_eq!(reloaded.liked_songs.len(), 1);
         assert_eq!(reloaded.liked_songs[0].video_id, "v1");
         assert_eq!(reloaded.recent_plays.len(), MAX_RECENT_PLAYS);
+        assert!(reloaded.playlists.is_empty());
+
+        let playlist = UserPlaylist {
+            id: "pl_1".to_string(),
+            name: "My Favorites".to_string(),
+            description: Some("Chill tracks".to_string()),
+            created_at: 1000,
+            updated_at: 1000,
+            tracks: vec![sample_song("v1")],
+        };
+        lib.playlists.push(playlist.clone());
+        save_library_to_path(&path, &lib).unwrap();
+
+        let reloaded2 = load_library_from_path(&path);
+        assert_eq!(reloaded2.playlists.len(), 1);
+        assert_eq!(reloaded2.playlists[0].name, "My Favorites");
+        assert_eq!(reloaded2.playlists[0].tracks.len(), 1);
 
         let _ = fs::remove_dir_all(&dir);
     }

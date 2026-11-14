@@ -1,12 +1,17 @@
 use std::sync::LazyLock;
 
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Mutex;
 use ytmapi_rs::auth::noauth::NoAuthToken;
+use ytmapi_rs::common::{VideoID, YoutubeID};
 use ytmapi_rs::json::from_json;
-use ytmapi_rs::query::SearchQuery;
 use ytmapi_rs::query::search::{FilteredSearch, SongsFilter};
+use ytmapi_rs::query::song::GetLyricsIDQuery;
+use ytmapi_rs::query::{
+    GetLyricsQuery, GetMoodCategoriesQuery, GetWatchPlaylistQuery, SearchQuery,
+};
 use ytmapi_rs::{Client as YtClient, YtMusic, YtMusicBuilder};
 
 static YT_SEARCH_CLIENT: LazyLock<Mutex<Option<YtMusic<NoAuthToken>>>> =
@@ -253,6 +258,232 @@ pub async fn search_songs(query: &str) -> anyhow::Result<Vec<SongResult>> {
 
     let root: Value = from_json(json)?;
     Ok(parse_songs_from_response(&root))
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LyricLine {
+    pub time: f64,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LyricsResponse {
+    pub plain_lyrics: Option<String>,
+    pub synced_lyrics: Option<Vec<LyricLine>>,
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HomeShelf {
+    pub id: String,
+    pub title: String,
+    pub subtitle: Option<String>,
+    pub items: Vec<SongResult>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MoodCategoryItem {
+    pub title: String,
+    pub params: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HomeShelves {
+    pub quick_picks: HomeShelf,
+    pub trending: HomeShelf,
+    pub moods: Vec<MoodCategoryItem>,
+}
+
+fn parse_lrc_lyrics(lrc_text: &str) -> Vec<LyricLine> {
+    static LRC_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^\[(\d+):(\d+(?:\.\d+)?)\](.*)$").unwrap());
+
+    let mut lines = Vec::new();
+    for raw_line in lrc_text.lines() {
+        let trimmed = raw_line.trim();
+        if let Some(caps) = LRC_RE.captures(trimmed) {
+            let minutes: f64 = caps[1].parse().unwrap_or(0.0);
+            let seconds: f64 = caps[2].parse().unwrap_or(0.0);
+            let text = caps[3].trim().to_string();
+            let time = minutes * 60.0 + seconds;
+            lines.push(LyricLine { time, text });
+        }
+    }
+    lines
+}
+
+#[derive(Deserialize)]
+struct LrclibResponse {
+    #[serde(rename = "plainLyrics")]
+    plain_lyrics: Option<String>,
+    #[serde(rename = "syncedLyrics")]
+    synced_lyrics: Option<String>,
+}
+
+async fn fetch_lrclib(title: &str, artist: &str, duration: Option<u32>) -> Option<LyricsResponse> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(4))
+        .build()
+        .ok()?;
+    let mut query = vec![("track_name", title), ("artist_name", artist)];
+    let dur_str = duration.map(|d| d.to_string());
+    if let Some(ref d) = dur_str {
+        query.push(("duration", d.as_str()));
+    }
+
+    let resp = client
+        .get("https://lrclib.net/api/get")
+        .query(&query)
+        .header("User-Agent", "MusicWave/0.1.0")
+        .send()
+        .await
+        .ok()?;
+
+    if !resp.status().is_success() {
+        return None;
+    }
+
+    let lrclib_data: LrclibResponse = resp.json().await.ok()?;
+    let synced = lrclib_data.synced_lyrics.as_deref().map(parse_lrc_lyrics);
+
+    if synced.as_ref().is_some_and(|s| !s.is_empty()) || lrclib_data.plain_lyrics.is_some() {
+        Some(LyricsResponse {
+            plain_lyrics: lrclib_data.plain_lyrics,
+            synced_lyrics: synced,
+            source: "lrclib".to_string(),
+        })
+    } else {
+        None
+    }
+}
+
+pub async fn get_lyrics(
+    video_id: &str,
+    title: Option<&str>,
+    artist: Option<&str>,
+    duration: Option<u32>,
+) -> anyhow::Result<LyricsResponse> {
+    if let (Some(t), Some(a)) = (title, artist)
+        && let Some(lrc) = fetch_lrclib(t, a, duration).await
+    {
+        return Ok(lrc);
+    }
+
+    let yt = get_or_init_client().await?;
+    let vid = VideoID::from_raw(video_id);
+    let lyrics_id_query = GetLyricsIDQuery::new(vid);
+    if let Ok(lyrics_id) = yt.query(lyrics_id_query).await {
+        let lyrics_query = GetLyricsQuery::new(lyrics_id);
+        if let Ok(lyrics) = yt.query(lyrics_query).await {
+            return Ok(LyricsResponse {
+                plain_lyrics: Some(lyrics.lyrics),
+                synced_lyrics: None,
+                source: "ytmusic".to_string(),
+            });
+        }
+    }
+
+    Ok(LyricsResponse {
+        plain_lyrics: None,
+        synced_lyrics: None,
+        source: "none".to_string(),
+    })
+}
+
+pub async fn get_watch_playlist(video_id: &str) -> anyhow::Result<Vec<SongResult>> {
+    let yt = get_or_init_client().await?;
+    let vid = VideoID::from_raw(video_id);
+    let query = GetWatchPlaylistQuery::new_from_video_id(vid);
+    let tracks = match yt.query(query).await {
+        Ok(t) => t,
+        Err(_) => {
+            reset_cached_client().await;
+            let yt = get_or_init_client().await?;
+            let vid = VideoID::from_raw(video_id);
+            let query = GetWatchPlaylistQuery::new_from_video_id(vid);
+            yt.query(query).await?
+        }
+    };
+
+    let songs = tracks
+        .into_iter()
+        .map(|t| {
+            let duration_seconds = parse_duration_to_seconds(&t.duration);
+            let thumbnail_url = t.thumbnails.last().map(|thumb| thumb.url.clone());
+            SongResult {
+                video_id: t.video_id.get_raw().to_string(),
+                title: t.title,
+                artist: t.author,
+                album: None,
+                duration: Some(t.duration),
+                duration_seconds,
+                thumbnail_url,
+            }
+        })
+        .collect();
+
+    Ok(songs)
+}
+
+pub async fn get_home_shelves() -> anyhow::Result<HomeShelves> {
+    let trending_songs = search_songs("Trending hits").await.unwrap_or_default();
+    let quick_picks_songs = search_songs("Top Global Hits").await.unwrap_or_default();
+
+    let mut moods = Vec::new();
+    if let Ok(yt) = get_or_init_client().await
+        && let Ok(sections) = yt.query(GetMoodCategoriesQuery).await
+    {
+        for section in sections {
+            for mood in section.mood_categories {
+                moods.push(MoodCategoryItem {
+                    title: mood.title,
+                    params: mood.params.get_raw().to_string(),
+                });
+            }
+        }
+    }
+
+    if moods.is_empty() {
+        let fallback_names = [
+            "Chill",
+            "Workout",
+            "Focus",
+            "Party",
+            "Pop",
+            "Hip-Hop",
+            "Rock",
+            "R&B",
+            "Electronic",
+            "Indie",
+        ];
+        for name in fallback_names {
+            moods.push(MoodCategoryItem {
+                title: name.to_string(),
+                params: String::new(),
+            });
+        }
+    }
+
+    Ok(HomeShelves {
+        quick_picks: HomeShelf {
+            id: "quick-picks".to_string(),
+            title: "Quick Picks".to_string(),
+            subtitle: Some("Popular music to get you started".to_string()),
+            items: quick_picks_songs.into_iter().take(12).collect(),
+        },
+        trending: HomeShelf {
+            id: "trending".to_string(),
+            title: "Trending Charts".to_string(),
+            subtitle: Some("What everyone is listening to".to_string()),
+            items: trending_songs.into_iter().take(12).collect(),
+        },
+        moods,
+    })
 }
 
 #[cfg(test)]

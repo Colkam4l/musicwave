@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Heart, PlayCircle, Search, Settings } from "lucide-react";
+import { Home, Heart, PlayCircle, Search, Settings } from "lucide-react";
 
 interface BottomNavProps {
   isPlayerOpen: boolean;
@@ -41,6 +41,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         className="bottom-nav-item"
         style={({ isActive }) => navItemStyle(isActive && !isPlayerOpen)}
       >
+        <Home size={20} />
+        <span>Home</span>
+      </NavLink>
+
+      <NavLink
+        to="/search"
+        className="bottom-nav-item"
+        style={({ isActive }) => navItemStyle(isActive && !isPlayerOpen)}
+      >
         <Search size={20} />
         <span>Search</span>
       </NavLink>
@@ -62,7 +71,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         aria-label="Open full-screen player"
       >
         <PlayCircle size={20} />
-        <span>Now Playing</span>
+        <span>Playing</span>
       </button>
 
       <NavLink

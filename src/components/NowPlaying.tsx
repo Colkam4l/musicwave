@@ -1,13 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Music } from "lucide-react";
+import { Music, Maximize2 } from "lucide-react";
 import { Song } from "../types/music";
+import { usePlayerStore } from "../store/playerStore";
 
 interface NowPlayingProps {
   song: Song | null;
+  onOpenModal?: () => void;
 }
 
-export const NowPlaying: React.FC<NowPlayingProps> = ({ song }) => {
+export const NowPlaying: React.FC<NowPlayingProps> = ({ song, onOpenModal }) => {
   const [imageError, setImageError] = useState(false);
+  const setIsNowPlayingOpen = usePlayerStore((s) => s.setIsNowPlayingOpen);
+
+  const handleClick = () => {
+    if (onOpenModal) {
+      onOpenModal();
+    } else {
+      setIsNowPlayingOpen(true);
+    }
+  };
 
   useEffect(() => {
     setImageError(false);
@@ -19,6 +30,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({ song }) => {
 
   return (
     <div
+      onClick={handleClick}
+      title="Click to expand Now Playing & Lyrics"
       style={{
         display: "flex",
         alignItems: "center",
@@ -26,7 +39,16 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({ song }) => {
         minWidth: 180,
         maxWidth: 280,
         flexShrink: 0,
+        cursor: "pointer",
+        borderRadius: "8px",
+        padding: "4px 8px",
+        margin: "-4px -8px",
+        transition: "background 0.2s",
       }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)")
+      }
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       {/* 40x40 Thumbnail with iridescent violet glow ring */}
       <div
@@ -70,6 +92,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({ song }) => {
           gap: "0.15rem",
           overflow: "hidden",
           minWidth: 0,
+          flex: 1,
         }}
       >
         <span
@@ -98,6 +121,12 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({ song }) => {
           {song.artist}
         </span>
       </div>
+
+      <Maximize2
+        size={14}
+        color="var(--text-muted)"
+        style={{ opacity: 0.6, flexShrink: 0 }}
+      />
     </div>
   );
 };

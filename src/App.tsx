@@ -7,7 +7,9 @@ import {
   useLocation,
 } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
+import { HomePage } from "./pages/HomePage";
 import { SearchPage } from "./pages/SearchPage";
+import { PlaylistPage } from "./pages/PlaylistPage";
 import { LibraryPage } from "./pages/LibraryPage";
 import { ArtistPage } from "./pages/ArtistPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -71,7 +73,9 @@ const AppShell: React.FC = () => {
         <main style={{ flex: 1, minWidth: 0 }}>
           <AnimatedLayout>
             <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<SearchPage />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/playlist/:id" element={<PlaylistPage />} />
               <Route path="/library" element={<LibraryPage />} />
               <Route path="/artist/:id" element={<ArtistPage />} />
               <Route path="/settings" element={<SettingsPage />} />

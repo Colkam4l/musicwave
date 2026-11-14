@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -11,11 +11,16 @@ import {
   Play,
   SkipBack,
   SkipForward,
+  Repeat,
+  Repeat1,
+  Shuffle,
+  FileText,
 } from "lucide-react";
 import { usePlayer } from "../hooks/usePlayer";
 import { useQueue } from "../hooks/useQueue";
 import { useLibrary } from "../hooks/useLibrary";
 import { ProgressBar } from "./ProgressBar";
+import { LyricsSheet } from "./LyricsSheet";
 
 interface FullScreenPlayerProps {
   isOpen: boolean;
@@ -29,6 +34,7 @@ export const FullScreenPlayer: React.FC<FullScreenPlayerProps> = ({
   isOpen,
   onClose,
 }) => {
+  const [showLyrics, setShowLyrics] = useState(false);
   const navigate = useNavigate();
   const {
     currentSong,
@@ -36,11 +42,20 @@ export const FullScreenPlayer: React.FC<FullScreenPlayerProps> = ({
     isBuffering,
     elapsedSeconds,
     totalSeconds,
+    repeatMode,
+    isShuffled,
     togglePlayPause,
     seekTo,
+    cycleRepeat,
   } = usePlayer();
-  const { canSkipPrev, canSkipNext, skipPrev, skipNext, toggleQueueOpen } =
-    useQueue();
+  const {
+    canSkipPrev,
+    canSkipNext,
+    skipPrev,
+    skipNext,
+    toggleQueueOpen,
+    shuffleQueue,
+  } = useQueue();
   const { isLiked, toggleLike } = useLibrary();
 
   const liked = currentSong ? isLiked(currentSong.videoId) : false;
@@ -112,67 +127,96 @@ export const FullScreenPlayer: React.FC<FullScreenPlayerProps> = ({
                 color: "var(--text-secondary)",
               }}
             >
-              Now Playing
+              {showLyrics ? "Lyrics" : "Now Playing"}
             </span>
 
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                toggleQueueOpen();
-              }}
-              aria-label="Open queue"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: "var(--radius-full)",
-                border: "none",
-                background: "transparent",
-                color: "var(--text-primary)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              <ListMusic size={22} />
-            </button>
-          </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <button
+                type="button"
+                onClick={() => setShowLyrics(!showLyrics)}
+                aria-label="Toggle lyrics"
+                title="Lyrics"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "var(--radius-full)",
+                  border: "none",
+                  background: showLyrics ? "rgba(124, 58, 237, 0.25)" : "transparent",
+                  color: showLyrics ? "var(--accent-rose)" : "var(--text-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <FileText size={20} />
+              </button>
 
-          {/* Album Artwork */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "1rem 0",
-            }}
-          >
-            <div
-              style={{
-                width: "min(80vw, 320px)",
-                height: "min(80vw, 320px)",
-                borderRadius: "var(--radius-lg)",
-                overflow: "hidden",
-                background: "var(--bg-surface-elevated)",
-                boxShadow: "0 18px 48px rgba(0, 0, 0, 0.65)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {currentSong?.thumbnailUrl ? (
-                <img
-                  src={currentSong.thumbnailUrl}
-                  alt={currentSong.title}
-                  referrerPolicy="no-referrer"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              ) : (
-                <Music size={64} color="var(--text-muted)" />
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  toggleQueueOpen();
+                }}
+                aria-label="Open queue"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "var(--radius-full)",
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--text-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <ListMusic size={22} />
+              </button>
             </div>
           </div>
+
+          {/* Album Artwork or Lyrics */}
+          {showLyrics ? (
+            <div style={{ flex: 1, minHeight: 0, overflow: "hidden", margin: "1rem 0" }}>
+              <LyricsSheet />
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "1rem 0",
+              }}
+            >
+              <div
+                style={{
+                  width: "min(80vw, 320px)",
+                  height: "min(80vw, 320px)",
+                  borderRadius: "var(--radius-lg)",
+                  overflow: "hidden",
+                  background: "var(--bg-surface-elevated)",
+                  boxShadow: "0 18px 48px rgba(0, 0, 0, 0.65)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {currentSong?.thumbnailUrl ? (
+                  <img
+                    src={currentSong.thumbnailUrl}
+                    alt={currentSong.title}
+                    referrerPolicy="no-referrer"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <Music size={64} color="var(--text-muted)" />
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Track Metadata, Like, Progress, and Transport */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -251,11 +295,35 @@ export const FullScreenPlayer: React.FC<FullScreenPlayerProps> = ({
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                gap: "1.5rem",
+                justifyContent: "space-between",
+                padding: "0 0.5rem",
                 paddingTop: "0.25rem",
               }}
             >
+              <button
+                type="button"
+                onClick={() => void shuffleQueue()}
+                aria-label="Shuffle queue"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "var(--radius-full)",
+                  border: "none",
+                  background: isShuffled
+                    ? "rgba(124, 58, 237, 0.25)"
+                    : "transparent",
+                  color: isShuffled
+                    ? "var(--accent-rose)"
+                    : "var(--text-secondary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <Shuffle size={20} />
+              </button>
+
               <button
                 type="button"
                 onClick={() => void skipPrev()}
@@ -334,6 +402,36 @@ export const FullScreenPlayer: React.FC<FullScreenPlayerProps> = ({
                 }}
               >
                 <SkipForward size={26} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void cycleRepeat()}
+                aria-label={`Repeat mode: ${repeatMode}`}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "var(--radius-full)",
+                  border: "none",
+                  background:
+                    repeatMode !== "off"
+                      ? "rgba(124, 58, 237, 0.25)"
+                      : "transparent",
+                  color:
+                    repeatMode !== "off"
+                      ? "var(--accent-rose)"
+                      : "var(--text-secondary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                {repeatMode === "one" ? (
+                  <Repeat1 size={22} />
+                ) : (
+                  <Repeat size={20} />
+                )}
               </button>
             </div>
           </div>

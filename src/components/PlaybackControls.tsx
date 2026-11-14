@@ -1,5 +1,6 @@
 import React from "react";
-import { Play, Pause, SkipBack, SkipForward, Loader2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Loader2, Shuffle, Repeat, Repeat1 } from "lucide-react";
+import { RepeatMode } from "../types/music";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -7,9 +8,17 @@ interface PlaybackControlsProps {
   disabled?: boolean;
   disablePrev?: boolean;
   disableNext?: boolean;
+  canSkipPrev?: boolean;
+  canSkipNext?: boolean;
+  repeatMode?: RepeatMode;
+  isShuffled?: boolean;
   onTogglePlayPause: () => void;
   onPrev?: () => void;
   onNext?: () => void;
+  onSkipPrev?: () => void;
+  onSkipNext?: () => void;
+  onCycleRepeat?: () => void;
+  onToggleShuffle?: () => void;
 }
 
 export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
@@ -18,27 +27,69 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   disabled = false,
   disablePrev = false,
   disableNext = false,
+  canSkipPrev,
+  canSkipNext,
+  repeatMode,
+  isShuffled = false,
   onTogglePlayPause,
   onPrev,
   onNext,
+  onSkipPrev,
+  onSkipNext,
+  onCycleRepeat,
+  onToggleShuffle,
 }) => {
-  const prevDisabled = disabled || disablePrev || !onPrev;
-  const nextDisabled = disabled || disableNext || !onNext;
+  const handlePrev = onPrev ?? onSkipPrev;
+  const handleNext = onNext ?? onSkipNext;
+  const prevDisabled =
+    disabled ||
+    disablePrev ||
+    (canSkipPrev !== undefined ? !canSkipPrev : !handlePrev);
+  const nextDisabled =
+    disabled ||
+    disableNext ||
+    (canSkipNext !== undefined ? !canSkipNext : !handleNext);
 
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "0.85rem",
+        gap: "0.6rem",
         flexShrink: 0,
       }}
     >
+      {/* Shuffle Button (Optional) */}
+      {onToggleShuffle && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onToggleShuffle}
+          title={isShuffled ? "Shuffle active" : "Shuffle queue"}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: "50%",
+            border: "none",
+            background: isShuffled ? "rgba(124, 58, 237, 0.2)" : "transparent",
+            color: isShuffled ? "#a855f7" : "var(--text-secondary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: disabled ? "not-allowed" : "pointer",
+            transition: "var(--transition-fast)",
+            outline: "none",
+          }}
+        >
+          <Shuffle size={16} />
+        </button>
+      )}
+
       {/* Previous Song */}
       <button
         type="button"
         disabled={prevDisabled}
-        onClick={onPrev}
+        onClick={handlePrev}
         title="Previous"
         style={{
           width: 44,
@@ -129,7 +180,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       <button
         type="button"
         disabled={nextDisabled}
-        onClick={onNext}
+        onClick={handleNext}
         title="Next"
         style={{
           width: 44,
@@ -161,6 +212,39 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       >
         <SkipForward size={19} />
       </button>
+
+      {/* Repeat Mode Button (Optional) */}
+      {onCycleRepeat && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onCycleRepeat}
+          title={`Repeat mode: ${repeatMode ?? "off"}`}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: "50%",
+            border: "none",
+            background:
+              repeatMode && repeatMode !== "off"
+                ? "rgba(124, 58, 237, 0.2)"
+                : "transparent",
+            color:
+              repeatMode && repeatMode !== "off"
+                ? "#a855f7"
+                : "var(--text-secondary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: disabled ? "not-allowed" : "pointer",
+            transition: "var(--transition-fast)",
+            outline: "none",
+            position: "relative",
+          }}
+        >
+          {repeatMode === "one" ? <Repeat1 size={17} /> : <Repeat size={16} />}
+        </button>
+      )}
     </div>
   );
 };

@@ -17,6 +17,15 @@ pub struct ProgressPayload {
     pub is_playing: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum RepeatMode {
+    #[default]
+    Off,
+    All,
+    One,
+}
+
 struct AudioEngine {
     sink: MixerDeviceSink,
     player: Option<Arc<Player>>,
@@ -30,6 +39,8 @@ struct AudioState {
     active_cancel: Option<PlaybackCancel>,
     engine: Option<AudioEngine>,
     current_song: Option<SongResult>,
+    repeat_mode: RepeatMode,
+    auto_queue: bool,
 }
 
 impl AudioState {
@@ -55,6 +66,8 @@ static AUDIO_STATE: LazyLock<Mutex<AudioState>> = LazyLock::new(|| {
         active_cancel: None,
         engine: None,
         current_song: None,
+        repeat_mode: RepeatMode::Off,
+        auto_queue: true,
     })
 });
 
@@ -97,6 +110,83 @@ pub async fn skip_next_from_queue(app_handle: &AppHandle) -> bool {
     true
 }
 
+pub async fn set_repeat_mode(mode: RepeatMode) {
+    let mut state = AUDIO_STATE.lock().await;
+    state.repeat_mode = mode;
+}
+
+pub async fn get_repeat_mode() -> RepeatMode {
+    let state = AUDIO_STATE.lock().await;
+    state.repeat_mode
+}
+
+pub async fn set_auto_queue(enabled: bool) {
+    let mut state = AUDIO_STATE.lock().await;
+    state.auto_queue = enabled;
+}
+
+pub async fn get_auto_queue() -> bool {
+    let state = AUDIO_STATE.lock().await;
+    state.auto_queue
+}
+
+async fn handle_track_ended(app_handle: &AppHandle) {
+    let (repeat_mode, auto_queue_enabled, current_song) = {
+        let state = AUDIO_STATE.lock().await;
+        (
+            state.repeat_mode,
+            state.auto_queue,
+            state.current_song.clone(),
+        )
+    };
+
+    if repeat_mode == RepeatMode::One
+        && let Some(song) = current_song
+    {
+        let handle_clone = app_handle.clone();
+        tokio::spawn(async move {
+            let _ = play_track(song.video_id.clone(), Some(song), handle_clone).await;
+        });
+        return;
+    }
+
+    if repeat_mode == RepeatMode::All
+        && let Some(song) = current_song.clone()
+    {
+        let _ = crate::queue::enqueue_last(song).await;
+    }
+
+    if skip_next_from_queue(app_handle).await {
+        return;
+    }
+
+    if auto_queue_enabled && let Some(song) = current_song {
+        eprintln!(
+            "[musicwave audio] Queue empty, querying auto-queue recommendations for {}...",
+            song.title
+        );
+        if let Ok(recommendations) = crate::search::get_watch_playlist(&song.video_id).await {
+            let new_tracks: Vec<SongResult> = recommendations
+                .into_iter()
+                .filter(|r| r.video_id != song.video_id)
+                .take(15)
+                .collect();
+
+            if !new_tracks.is_empty() {
+                for rec in new_tracks {
+                    let _ = crate::queue::enqueue_last(rec).await;
+                }
+                if skip_next_from_queue(app_handle).await {
+                    return;
+                }
+            }
+        }
+    }
+
+    let _ = app_handle.emit("player://ended", ());
+    sync_integrations(None, "Stopped");
+}
+
 /// Stops any active or in-flight playback and starts a new cancellation session.
 pub async fn begin_playback_session() -> (u64, PlaybackCancel) {
     let mut state = AUDIO_STATE.lock().await;
@@ -133,10 +223,7 @@ fn spawn_progress_monitor(
                 };
                 let _ = app_handle.emit("player://progress", ended_payload);
 
-                if !skip_next_from_queue(&app_handle).await {
-                    let _ = app_handle.emit("player://ended", ());
-                    sync_integrations(None, "Stopped");
-                }
+                handle_track_ended(&app_handle).await;
                 break;
             }
 

@@ -1,10 +1,11 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Heart, ListMusic, Search, Settings } from "lucide-react";
+import { Home, Heart, ListMusic, Search, Settings } from "lucide-react";
 import { useQueue } from "../hooks/useQueue";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Search", icon: Search, end: true },
+  { to: "/", label: "Home", icon: Home, end: true },
+  { to: "/search", label: "Search", icon: Search, end: false },
   { to: "/library", label: "Library", icon: Heart, end: false },
   { to: "/settings", label: "Settings", icon: Settings, end: false },
 ];

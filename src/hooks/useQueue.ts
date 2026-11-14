@@ -100,6 +100,17 @@ export const useQueue = () => {
     }
   }, [setQueue]);
 
+  const shuffleQueue = useCallback(async () => {
+    try {
+      const updated = await invoke<Song[]>("shuffle_queue");
+      setQueue(updated);
+      usePlayerStore.getState().setIsShuffled(true);
+      useToastStore.getState().addToast("Queue shuffled", "info", 2000);
+    } catch (err) {
+      console.error("Failed shuffling queue:", err);
+    }
+  }, [setQueue]);
+
   const skipNext = useCallback(async () => {
     try {
       const nextSong = await invoke<Song | null>("dequeue_front");
@@ -153,6 +164,7 @@ export const useQueue = () => {
     removeFromQueue,
     reorderQueue,
     clearQueue,
+    shuffleQueue,
     skipNext,
     skipPrev,
   };

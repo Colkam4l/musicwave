@@ -100,11 +100,16 @@ export const usePlayer = () => {
     elapsedSeconds,
     totalSeconds,
     volume,
+    repeatMode,
+    isShuffled,
+    isAutoQueueEnabled,
     setCurrentSong,
     setIsPlaying,
     setIsBuffering,
     setProgress,
     setVolume,
+    setRepeatMode,
+    setIsAutoQueueEnabled,
   } = usePlayerStore();
 
   const playSong = useCallback(
@@ -180,6 +185,34 @@ export const usePlayer = () => {
     [setVolume]
   );
 
+  const cycleRepeat = useCallback(async () => {
+    const next: "off" | "all" | "one" =
+      repeatMode === "off" ? "all" : repeatMode === "all" ? "one" : "off";
+    setRepeatMode(next);
+    try {
+      await invoke("set_repeat_mode", { mode: next });
+    } catch (err) {
+      console.error("Failed setting repeat mode:", err);
+    }
+  }, [repeatMode, setRepeatMode]);
+
+  const toggleAutoQueue = useCallback(async () => {
+    const next = !isAutoQueueEnabled;
+    setIsAutoQueueEnabled(next);
+    try {
+      await invoke("set_auto_queue", { enabled: next });
+      useToastStore
+        .getState()
+        .addToast(
+          next ? "Auto-Queue enabled" : "Auto-Queue disabled",
+          "info",
+          2000
+        );
+    } catch (err) {
+      console.error("Failed setting auto-queue:", err);
+    }
+  }, [isAutoQueueEnabled, setIsAutoQueueEnabled]);
+
   return {
     currentSong,
     isPlaying,
@@ -187,9 +220,14 @@ export const usePlayer = () => {
     elapsedSeconds,
     totalSeconds,
     volume,
+    repeatMode,
+    isShuffled,
+    isAutoQueueEnabled,
     playSong,
     togglePlayPause,
     seekTo,
     changeVolume,
+    cycleRepeat,
+    toggleAutoQueue,
   };
 };

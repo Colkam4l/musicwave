@@ -16,9 +16,10 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 *   **Sprint 3 — Queue, Library & Navigation:** Implemented Rust `queue.rs` (200-cap `VecDeque` play queue with auto-advance and `player://track-changed`) and `library.rs` (atomic `library.json` persistence for liked songs and max-50 recent plays), sidebar + routing (`/`, `/library`, `/artist/:id`, `/settings`), slide-out `QueuePanel`, `LibraryPage`, `ArtistPage`, clickable artist links, like/queue actions on `SongCard`, wired Previous/Next controls, and global `<ToastContainer />` notifications.
 *   **Sprint 4 — Polish, Settings & Auth UX:** Implemented persistent `settings.rs` (`settings.json` with one-time legacy `headers.json` / `po_token.txt` migration and instant reload on playback), `SettingsPage` (auth credentials form, Test Connection, About + injected `__APP_VERSION__`), Linux `mpris.rs` (`zbus` D-Bus media player controls & metadata), `tray.rs` system tray icon + menu + close-to-tray, global keyboard shortcuts (`useKeyboardShortcuts` + `KeyboardShortcuts` modal), and Framer Motion transitions (`AnimatedLayout`, `SongCard` hover scale, `QueuePanel` slide-in).
 *   **Sprint 5 — Android Port (Tauri Mobile):** Implemented mobile-responsive navigation (`BottomNav`, `MobilePlayerBar`, `FullScreenPlayer`, `mobile.css`), platform detection (`usePlatform.ts`), `tauri-plugin-os`, Android `minSdkVersion: 24`, and mobile conditional feature gating.
+*   **Sprint 6 — Core Streaming Features & Discovery Experience:** Implemented Home discovery shelves (`/`) with Quick Picks, Trending Charts (#1–#10), and mood pill filters; dedicated Search page (`/search`); expandable `NowPlayingModal` and `FullScreenPlayer` lyrics sheet with LRCLIB timestamped synchronized lyrics; Auto-Queue recommendation engine via YouTube Music Watch Playlist radio; Repeat (`Off`, `All`, `One`) and Shuffle playback modes; custom user playlist creation, management, and track ordering (`library.json`).
 
 ### Active Sprint
-*   **Sprint 6 — Core Streaming Features & Discovery Experience:** ⏳ Active on `feature/sprint-6-core-features`.
+*   **Sprint 6 complete; ready for Sprint 7 (Dual Authentication & Account Sync).**
 
 ### Sprints Overview
 | Sprint | Name | Status |
@@ -29,9 +30,9 @@ MusicWave is a native, multiplatform YouTube Music client built on a **Tauri v2 
 | [3](./sprints/SPRINT-3.md) | Queue, Library & Navigation | ✅ Complete |
 | [4](./sprints/SPRINT-4.md) | Polish, Settings & Auth UX | ✅ Complete |
 | [5](./sprints/SPRINT-5.md) | Android Port (Tauri Mobile) | ✅ Complete (UI/Config) |
-| [6](./sprints/SPRINT-6.md) | Core Streaming Features & Discovery | ⏳ Active |
-| 7 | Dual Authentication & Account Sync | ⏳ Planned |
-| 8 | Material Expressive Redesign | ⏳ Planned |
+| [6](./sprints/SPRINT-6.md) | Core Streaming Features & Discovery | ✅ Complete |
+| [7](./sprints/SPRINT-7.md) | Dual Authentication & Account Sync | ⏳ Planned |
+| [8](./sprints/SPRINT-8.md) | Material Expressive Redesign | ⏳ Planned |
 
 ---
 

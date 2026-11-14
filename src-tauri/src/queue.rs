@@ -64,6 +64,32 @@ pub async fn clear_queue() -> Vec<SongResult> {
     Vec::new()
 }
 
+/// Shuffles the current queue in-place and returns the updated list.
+pub async fn shuffle_queue() -> Vec<SongResult> {
+    use std::time::SystemTime;
+    let mut queue = PLAY_QUEUE.lock().await;
+    let mut vec: Vec<SongResult> = queue.drain(..).collect();
+    let mut state = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map(|d| d.as_nanos() as u64)
+        .unwrap_or(0x853c49e6748fea9b);
+    if state == 0 {
+        state = 0x853c49e6748fea9b;
+    }
+    for i in (1..vec.len()).rev() {
+        state ^= state >> 12;
+        state ^= state << 25;
+        state ^= state >> 27;
+        let r = (state.wrapping_mul(0x2545F4914F6CDD1D) >> 32) as usize;
+        let j = r % (i + 1);
+        vec.swap(i, j);
+    }
+    for song in vec {
+        queue.push_back(song);
+    }
+    queue.iter().cloned().collect()
+}
+
 /// Returns a snapshot of the current queue in playback order.
 pub async fn get_queue() -> Vec<SongResult> {
     let queue = PLAY_QUEUE.lock().await;

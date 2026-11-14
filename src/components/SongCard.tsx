@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Clock, Disc, Heart, Music, Pause, Play, Plus } from "lucide-react";
+import { Clock, Disc, Heart, Music, Pause, Play, Plus, ListPlus } from "lucide-react";
 import { Song } from "../types/music";
 import { usePlayer } from "../hooks/usePlayer";
 import { useQueue } from "../hooks/useQueue";
 import { useLibrary } from "../hooks/useLibrary";
+import { PlaylistModal } from "./PlaylistModal";
 
 interface SongCardProps {
   song: Song;
@@ -16,6 +17,7 @@ interface SongCardProps {
 export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const navigate = useNavigate();
   const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
   const { addToQueue } = useQueue();
@@ -259,6 +261,28 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
 
         <button
           type="button"
+          onClick={() => setIsPlaylistModalOpen(true)}
+          title="Add to playlist"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: "none",
+            background: "transparent",
+            color: isHovered ? "var(--text-primary)" : "var(--text-muted)",
+            opacity: isHovered ? 1 : 0.45,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "var(--transition-fast)",
+          }}
+        >
+          <ListPlus size={16} />
+        </button>
+
+        <button
+          type="button"
           onClick={() => toggleLike(song)}
           title={liked ? "Remove from Liked Songs" : "Add to Liked Songs"}
           style={{
@@ -283,6 +307,12 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
           />
         </button>
       </div>
+
+      <PlaylistModal
+        song={song}
+        isOpen={isPlaylistModalOpen}
+        onClose={() => setIsPlaylistModalOpen(false)}
+      />
 
       {/* Duration */}
       <div

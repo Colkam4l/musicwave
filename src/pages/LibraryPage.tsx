@@ -1,19 +1,30 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, Heart, Music, Play } from "lucide-react";
+import { Music, ListMusic, Plus } from "lucide-react";
 import { useLibrary } from "../hooks/useLibrary";
-import { usePlayer } from "../hooks/usePlayer";
 import { SongCard } from "../components/SongCard";
 import { Spinner } from "../components/Spinner";
 
 export const LibraryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { likedSongs, recentPlays, isLoading } = useLibrary();
-  const { playSong } = usePlayer();
+  const { likedSongs, recentPlays, playlists, isLoading, createPlaylist } = useLibrary();
 
-  const recentTen = recentPlays.slice(0, 10);
+  const [activeTab, setActiveTab] = useState<"playlists" | "liked" | "recents">("playlists");
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const [playlistName, setPlaylistName] = useState("");
+  const [playlistDesc, setPlaylistDesc] = useState("");
 
-  if (isLoading && likedSongs.length === 0 && recentPlays.length === 0) {
+  const handleCreatePlaylist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!playlistName.trim()) return;
+    const pl = await createPlaylist(playlistName.trim(), playlistDesc.trim() || undefined);
+    setPlaylistName("");
+    setPlaylistDesc("");
+    setIsCreatingPlaylist(false);
+    navigate(`/playlist/${pl.id}`);
+  };
+
+  if (isLoading && likedSongs.length === 0 && recentPlays.length === 0 && playlists.length === 0) {
     return (
       <div style={{ padding: "4rem 1.5rem" }}>
         <Spinner label="Loading your library..." />
@@ -31,7 +42,7 @@ export const LibraryPage: React.FC = () => {
         padding: "2rem 1.75rem 4rem 1.75rem",
       }}
     >
-      <header style={{ marginBottom: "2rem" }}>
+      <header style={{ marginBottom: "1.5rem" }}>
         <h1
           style={{
             fontSize: "var(--font-size-xl)",
@@ -44,219 +55,322 @@ export const LibraryPage: React.FC = () => {
           Your Library
         </h1>
         <p style={{ fontSize: "var(--font-size-sm)", color: "var(--text-muted)" }}>
-          Liked tracks and recently played history saved locally.
+          Custom playlists, liked tracks, and listening history saved locally.
         </p>
-      </header>
 
-      {/* Recently Played Horizontal Row */}
-      <section style={{ marginBottom: "2.5rem" }}>
+        {/* Tab Switcher */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "0.55rem",
-            marginBottom: "1rem",
+            gap: "8px",
+            marginTop: "1.25rem",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            paddingBottom: "8px",
           }}
         >
-          <Clock size={18} color="var(--accent-blue)" />
-          <h2
+          <button
+            onClick={() => setActiveTab("playlists")}
             style={{
-              fontSize: "var(--font-size-md)",
-              fontWeight: 700,
-              color: "var(--text-primary)",
+              background: activeTab === "playlists" ? "rgba(124, 58, 237, 0.2)" : "transparent",
+              color: activeTab === "playlists" ? "var(--accent-rose)" : "var(--text-secondary)",
+              border: "none",
+              padding: "6px 16px",
+              borderRadius: "16px",
+              fontWeight: 600,
+              fontSize: "14px",
+              cursor: "pointer",
+              transition: "all 0.2s",
             }}
           >
-            Recently Played
-          </h2>
+            Playlists ({playlists.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("liked")}
+            style={{
+              background: activeTab === "liked" ? "rgba(124, 58, 237, 0.2)" : "transparent",
+              color: activeTab === "liked" ? "var(--accent-rose)" : "var(--text-secondary)",
+              border: "none",
+              padding: "6px 16px",
+              borderRadius: "16px",
+              fontWeight: 600,
+              fontSize: "14px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            Liked Songs ({likedSongs.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("recents")}
+            style={{
+              background: activeTab === "recents" ? "rgba(124, 58, 237, 0.2)" : "transparent",
+              color: activeTab === "recents" ? "var(--accent-rose)" : "var(--text-secondary)",
+              border: "none",
+              padding: "6px 16px",
+              borderRadius: "16px",
+              fontWeight: 600,
+              fontSize: "14px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            Recently Played ({recentPlays.length})
+          </button>
         </div>
+      </header>
 
-        {recentTen.length === 0 ? (
-          <div
-            style={{
-              padding: "1.5rem",
-              borderRadius: "var(--radius-md)",
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-subtle)",
-              color: "var(--text-muted)",
-              fontSize: "var(--font-size-sm)",
-            }}
-          >
-            Play any song from Search to build your recent listening history.
-          </div>
-        ) : (
+      {/* Playlists Tab */}
+      {activeTab === "playlists" && (
+        <section>
           <div
             style={{
               display: "flex",
-              gap: "1rem",
-              overflowX: "auto",
-              paddingBottom: "0.5rem",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1.25rem",
             }}
           >
-            {recentTen.map((song) => (
-              <div
-                key={song.videoId}
-                onClick={() => playSong(song)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    playSong(song);
-                  }
-                }}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
+              <ListMusic size={18} color="var(--accent-rose)" />
+              <h2 style={{ fontSize: "var(--font-size-md)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                Custom Playlists
+              </h2>
+            </div>
+            <button
+              onClick={() => setIsCreatingPlaylist(true)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "var(--accent-gradient)",
+                border: "none",
+                color: "#ffffff",
+                padding: "8px 16px",
+                borderRadius: "20px",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 2px 10px rgba(124, 58, 237, 0.3)",
+              }}
+            >
+              <Plus size={16} /> New Playlist
+            </button>
+          </div>
+
+          {/* Create Modal / Form */}
+          {isCreatingPlaylist && (
+            <form
+              onSubmit={(e) => void handleCreatePlaylist(e)}
+              style={{
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "16px",
+                padding: "16px",
+                marginBottom: "20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600 }}>Create New Playlist</h3>
+              <input
+                type="text"
+                placeholder="Playlist name (required)"
+                value={playlistName}
+                onChange={(e) => setPlaylistName(e.target.value)}
+                autoFocus
+                required
                 style={{
-                  width: 156,
-                  flexShrink: 0,
-                  padding: "0.75rem",
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--bg-surface)",
-                  border: "1px solid var(--border-subtle)",
-                  cursor: "pointer",
-                  transition: "var(--transition-fast)",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  background: "rgba(0,0,0,0.3)",
+                  color: "#fff",
+                  fontSize: "14px",
                 }}
-              >
-                <div
+              />
+              <input
+                type="text"
+                placeholder="Description (optional)"
+                value={playlistDesc}
+                onChange={(e) => setPlaylistDesc(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  background: "rgba(0,0,0,0.3)",
+                  color: "#fff",
+                  fontSize: "14px",
+                }}
+              />
+              <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingPlaylist(false)}
                   style={{
-                    width: "100%",
-                    aspectRatio: "1 / 1",
-                    borderRadius: "var(--radius-sm)",
-                    overflow: "hidden",
-                    background: "var(--bg-surface-elevated)",
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: "0.65rem",
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    background: "none",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    color: "rgba(255,255,255,0.7)",
+                    cursor: "pointer",
                   }}
                 >
-                  {song.thumbnailUrl ? (
-                    <img
-                      src={song.thumbnailUrl}
-                      alt={song.title}
-                      referrerPolicy="no-referrer"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <Music size={28} color="var(--text-muted)" />
-                  )}
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: "6px 16px",
+                    borderRadius: "8px",
+                    background: "var(--accent-gradient)",
+                    border: "none",
+                    color: "#fff",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          )}
+
+          {playlists.length === 0 ? (
+            <div
+              style={{
+                padding: "3rem 1.5rem",
+                borderRadius: "var(--radius-md)",
+                background: "var(--bg-surface)",
+                border: "1px dashed var(--border-subtle)",
+                textAlign: "center",
+                color: "var(--text-muted)",
+                fontSize: "var(--font-size-sm)",
+              }}
+            >
+              No custom playlists yet. Click "+ New Playlist" to create one!
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                gap: "16px",
+              }}
+            >
+              {playlists.map((pl) => (
+                <div
+                  key={pl.id}
+                  onClick={() => navigate(`/playlist/${pl.id}`)}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.03)",
+                    border: "1px solid rgba(255, 255, 255, 0.06)",
+                    borderRadius: "16px",
+                    padding: "16px",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
                   <div
                     style={{
-                      position: "absolute",
-                      right: 8,
-                      bottom: 8,
-                      width: 30,
-                      height: 30,
-                      borderRadius: "50%",
-                      background: "var(--accent-gradient)",
+                      width: "100%",
+                      aspectRatio: "1",
+                      borderRadius: "12px",
+                      background: "rgba(255, 255, 255, 0.05)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.45)",
+                      overflow: "hidden",
+                      marginBottom: "12px",
+                      boxShadow: "0 6px 14px rgba(0,0,0,0.4)",
                     }}
                   >
-                    <Play size={13} fill="#ffffff" color="#ffffff" style={{ marginLeft: 1 }} />
+                    {pl.tracks[0]?.thumbnailUrl ? (
+                      <img
+                        src={pl.tracks[0].thumbnailUrl}
+                        alt=""
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <Music size={36} color="rgba(255,255,255,0.3)" />
+                    )}
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {pl.name}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginTop: "4px" }}>
+                    {pl.tracks.length} tracks
                   </div>
                 </div>
-                <div
-                  style={{
-                    fontSize: "var(--font-size-sm)",
-                    fontWeight: 600,
-                    color: "var(--text-primary)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    marginBottom: "0.2rem",
-                  }}
-                  title={song.title}
-                >
-                  {song.title}
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/artist/${encodeURIComponent(song.artist)}`);
-                  }}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    padding: 0,
-                    fontSize: "var(--font-size-xs)",
-                    color: "var(--text-muted)",
-                    cursor: "pointer",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    maxWidth: "100%",
-                    textAlign: "left",
-                  }}
-                  title={song.artist}
-                >
-                  {song.artist}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
-      {/* Liked Songs Section */}
-      <section>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "1rem",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
-            <Heart size={18} color="var(--accent-rose)" fill="var(--accent-rose)" />
-            <h2
+      {/* Liked Songs Tab */}
+      {activeTab === "liked" && (
+        <section>
+          {likedSongs.length === 0 ? (
+            <div
               style={{
-                fontSize: "var(--font-size-md)",
-                fontWeight: 700,
-                color: "var(--text-primary)",
-              }}
-            >
-              Liked Songs
-            </h2>
-            <span
-              style={{
-                fontSize: "var(--font-size-xs)",
+                padding: "3rem 1.5rem",
+                borderRadius: "var(--radius-md)",
+                background: "var(--bg-surface)",
+                border: "1px dashed var(--border-subtle)",
+                textAlign: "center",
                 color: "var(--text-muted)",
+                fontSize: "var(--font-size-sm)",
               }}
             >
-              ({likedSongs.length})
-            </span>
-          </div>
-        </div>
+              No liked songs yet. Click the heart icon on any track to save it here.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              {likedSongs.map((song, index) => (
+                <SongCard key={song.videoId} song={song} index={index} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
-        {likedSongs.length === 0 ? (
-          <div
-            style={{
-              padding: "2rem 1.5rem",
-              borderRadius: "var(--radius-md)",
-              background: "var(--bg-surface)",
-              border: "1px dashed var(--border-subtle)",
-              textAlign: "center",
-              color: "var(--text-muted)",
-              fontSize: "var(--font-size-sm)",
-            }}
-          >
-            No liked songs yet. Click the heart icon on any track to save it here.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            {likedSongs.map((song, index) => (
-              <SongCard key={song.videoId} song={song} index={index} />
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Recently Played Tab */}
+      {activeTab === "recents" && (
+        <section>
+          {recentPlays.length === 0 ? (
+            <div
+              style={{
+                padding: "3rem 1.5rem",
+                borderRadius: "var(--radius-md)",
+                background: "var(--bg-surface)",
+                border: "1px dashed var(--border-subtle)",
+                textAlign: "center",
+                color: "var(--text-muted)",
+                fontSize: "var(--font-size-sm)",
+              }}
+            >
+              No recently played history yet.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              {recentPlays.map((song, index) => (
+                <SongCard key={`${song.videoId}-${index}`} song={song} index={index} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 };

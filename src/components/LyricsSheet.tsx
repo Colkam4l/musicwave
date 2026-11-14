@@ -176,3 +176,4 @@ export const LyricsSheet: React.FC<LyricsSheetProps> = () => {
     </div>
   );
 };
+

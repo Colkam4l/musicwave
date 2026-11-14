@@ -70,3 +70,4 @@ export const useLyrics = () => {
     hasPlainLyrics: Boolean(currentLyrics?.plainLyrics),
   };
 };
+

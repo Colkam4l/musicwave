@@ -149,3 +149,4 @@ _Step-by-step instructions to verify Home, Now Playing, Lyrics, Auto-Queue, and 
 
 ### Known Issues / Notes for Sprint 7
 _Any caveats or prerequisites for Sprint 7 (Dual Authentication & Account Sync)._
+

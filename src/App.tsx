@@ -22,6 +22,7 @@ import { FullScreenPlayer } from "./components/FullScreenPlayer";
 import { ToastContainer } from "./components/Toast";
 import { AnimatedLayout } from "./components/AnimatedLayout";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
+import { AuthModal } from "./components/AuthModal";
 import { usePlayerEvents } from "./hooks/usePlayer";
 import { useQueue, useQueueSync } from "./hooks/useQueue";
 import { useLibrarySync } from "./hooks/useLibrary";
@@ -60,6 +61,7 @@ const AppShell: React.FC = () => {
   return (
     <div className={isMobile ? "mobile-layout" : undefined}>
       <ToastContainer />
+      <AuthModal />
       <div
         style={{
           display: "flex",

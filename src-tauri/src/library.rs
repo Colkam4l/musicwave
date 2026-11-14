@@ -19,6 +19,8 @@ pub struct UserPlaylist {
     pub created_at: u64,
     pub updated_at: u64,
     pub tracks: Vec<SongResult>,
+    #[serde(default)]
+    pub is_cloud: Option<bool>,
 }
 
 fn current_timestamp() -> u64 {
@@ -203,6 +205,7 @@ pub async fn create_playlist(
             created_at: now,
             updated_at: now,
             tracks: Vec::new(),
+            is_cloud: Some(false),
         };
         lib.playlists.push(playlist.clone());
         playlist
@@ -319,6 +322,43 @@ pub async fn get_playlist(
     .await
 }
 
+pub async fn merge_synced_library(
+    app_handle: &AppHandle,
+    cloud_songs: Vec<SongResult>,
+    cloud_playlists: Vec<UserPlaylist>,
+) -> anyhow::Result<(usize, usize)> {
+    let mut guard = LIBRARY_CACHE.lock().await;
+    let mut library = match *guard {
+        Some(ref lib) => lib.clone(),
+        None => load_library(app_handle)?,
+    };
+
+    let mut added_songs = 0;
+    for song in cloud_songs {
+        if !library
+            .liked_songs
+            .iter()
+            .any(|s| s.video_id == song.video_id)
+        {
+            library.liked_songs.push(song);
+            added_songs += 1;
+        }
+    }
+
+    let mut updated_playlists = 0;
+    // Retain local playlists and replace prior cloud playlists with fresh synced ones
+    library.playlists.retain(|p| p.is_cloud != Some(true));
+    for pl in cloud_playlists {
+        library.playlists.push(pl);
+        updated_playlists += 1;
+    }
+
+    save_library(app_handle, &library)?;
+    *guard = Some(library);
+
+    Ok((added_songs, updated_playlists))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -374,6 +414,7 @@ mod tests {
             created_at: 1000,
             updated_at: 1000,
             tracks: vec![sample_song("v1")],
+            is_cloud: None,
         };
         lib.playlists.push(playlist.clone());
         save_library_to_path(&path, &lib).unwrap();

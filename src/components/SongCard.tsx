@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Clock, Disc, Heart, Music, Pause, Play, Plus, ListPlus } from "lucide-react";
+import { Clock, Disc, Heart, Music, Pause, Play, Plus, ListPlus, ArrowDownToLine, CheckCircle2, Loader2 } from "lucide-react";
 import { Song } from "../types/music";
 import { usePlayer } from "../hooks/usePlayer";
 import { useQueue } from "../hooks/useQueue";
 import { useLibrary } from "../hooks/useLibrary";
+import { useCache } from "../hooks/useCache";
 import { PlaylistModal } from "./PlaylistModal";
 
 interface SongCardProps {
@@ -22,6 +23,7 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
   const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
   const { addToQueue } = useQueue();
   const { isLiked, toggleLike } = useLibrary();
+  const { isTrackCached, downloadTrack, isDownloading } = useCache();
 
   useEffect(() => {
     setImageError(false);
@@ -29,6 +31,8 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
 
   const isCurrentSong = currentSong?.videoId === song.videoId;
   const liked = isLiked(song.videoId);
+  const cached = isTrackCached(song.videoId);
+  const downloading = Boolean(isDownloading[song.videoId]);
 
   const handleClick = () => {
     if (isCurrentSong) {
@@ -305,6 +309,40 @@ export const SongCard: React.FC<SongCardProps> = ({ song, index, onSelect }) => 
             fill={liked ? "var(--accent-rose)" : "none"}
             color={liked ? "var(--accent-rose)" : "currentColor"}
           />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => downloadTrack(song.videoId, song.title)}
+          title={
+            cached
+              ? "Downloaded offline"
+              : downloading
+              ? "Downloading..."
+              : "Download for offline listening"
+          }
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: "none",
+            background: "transparent",
+            color: cached ? "#10b981" : "var(--text-muted)",
+            opacity: cached || isHovered || downloading ? 1 : 0.45,
+            cursor: cached ? "default" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "var(--transition-fast)",
+          }}
+        >
+          {downloading ? (
+            <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />
+          ) : cached ? (
+            <CheckCircle2 size={15} color="#10b981" />
+          ) : (
+            <ArrowDownToLine size={15} />
+          )}
         </button>
       </div>
 

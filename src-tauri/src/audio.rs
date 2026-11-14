@@ -325,6 +325,83 @@ pub async fn play_stream(
     Ok(())
 }
 
+pub async fn play_cached_file(
+    file_path: std::path::PathBuf,
+    total_seconds: f64,
+    session_gen: u64,
+    cancel: PlaybackCancel,
+    app_handle: AppHandle,
+) -> anyhow::Result<()> {
+    if cancel.is_cancelled() {
+        return Err(PlaybackCancelledError.into());
+    }
+
+    eprintln!(
+        "[musicwave audio] Playing offline cached track: {}",
+        file_path.display()
+    );
+    let decode_task = tokio::task::spawn_blocking(move || {
+        let file = std::fs::File::open(file_path)?;
+        Decoder::new_mp4(file).map_err(|e| anyhow::anyhow!("MP4 decode error: {e}"))
+    });
+
+    let source = tokio::select! {
+        _ = cancel.wait_cancelled() => return Err(PlaybackCancelledError.into()),
+        res = decode_task => match res {
+            Ok(Ok(src)) => src,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => return Err(e.into()),
+        },
+    };
+
+    let mut state = AUDIO_STATE.lock().await;
+    if state.generation != session_gen || cancel.is_cancelled() {
+        return Err(PlaybackCancelledError.into());
+    }
+
+    if state.engine.is_none() {
+        eprintln!("[musicwave audio] Opening default audio sink...");
+        let sink = DeviceSinkBuilder::open_default_sink()
+            .map_err(|e| anyhow::anyhow!("Failed to open default audio sink: {e:?}"))?;
+        state.engine = Some(AudioEngine {
+            sink,
+            player: None,
+            total_seconds: 0.0,
+            abort_handle: None,
+        });
+    }
+
+    let volume = state.volume;
+    let engine = state.engine.as_mut().unwrap();
+
+    if let Some(prev_task) = engine.abort_handle.take() {
+        prev_task.abort();
+    }
+    if let Some(prev_player) = engine.player.take() {
+        prev_player.stop();
+    }
+
+    let player = Arc::new(Player::connect_new(engine.sink.mixer()));
+    player.set_volume(volume);
+    player.append(source);
+    player.play();
+    eprintln!("[musicwave audio] Offline player started playing!");
+
+    let initial_payload = ProgressPayload {
+        elapsed_seconds: 0.0,
+        total_seconds,
+        is_playing: true,
+    };
+    let _ = app_handle.emit("player://progress", initial_payload);
+
+    let abort_handle = spawn_progress_monitor(Arc::clone(&player), total_seconds, app_handle);
+    engine.player = Some(player);
+    engine.total_seconds = total_seconds;
+    engine.abort_handle = Some(abort_handle);
+
+    Ok(())
+}
+
 /// Resolves and starts playing `video_id`, recording `song` in recently played once active.
 pub async fn play_track(
     video_id: String,
@@ -335,8 +412,26 @@ pub async fn play_track(
     if song.is_some() {
         sync_integrations(song.clone(), "Playing");
     }
-    let resolved = resolve_audio_stream_with_app(&video_id, &cancel, Some(&app_handle)).await?;
-    play_stream(resolved, session_gen, cancel, app_handle.clone()).await?;
+
+    if let Some(cached_path) = crate::cache::get_cached_track_path(&app_handle, &video_id) {
+        eprintln!("[musicwave audio] Found track in offline disk cache!");
+        let total_secs = song
+            .as_ref()
+            .and_then(|s| s.duration_seconds)
+            .map(|s| s as f64)
+            .unwrap_or(0.0);
+        play_cached_file(
+            cached_path,
+            total_secs,
+            session_gen,
+            cancel,
+            app_handle.clone(),
+        )
+        .await?;
+    } else {
+        let resolved = resolve_audio_stream_with_app(&video_id, &cancel, Some(&app_handle)).await?;
+        play_stream(resolved, session_gen, cancel, app_handle.clone()).await?;
+    }
 
     {
         let mut state = AUDIO_STATE.lock().await;

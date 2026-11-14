@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { Home, Heart, ListMusic, Search, Settings } from "lucide-react";
 import { useQueue } from "../hooks/useQueue";
+import { ProfileMenu } from "./ProfileMenu";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: Home, end: true },
@@ -134,10 +135,13 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Queue Drawer Toggle */}
-      <button
-        type="button"
-        onClick={toggleQueueOpen}
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <ProfileMenu />
+
+        {/* Queue Drawer Toggle */}
+        <button
+          type="button"
+          onClick={toggleQueueOpen}
         style={{
           display: "flex",
           alignItems: "center",
@@ -186,6 +190,7 @@ export const Sidebar: React.FC = () => {
           </span>
         )}
       </button>
+      </div>
     </aside>
   );
 };

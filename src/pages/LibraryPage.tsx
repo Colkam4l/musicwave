@@ -1,18 +1,57 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Music, ListMusic, Plus } from "lucide-react";
+import { Music, ListMusic, Plus, Cloud, User, CheckCircle2, HardDriveDownload } from "lucide-react";
 import { useLibrary } from "../hooks/useLibrary";
+import { useCache } from "../hooks/useCache";
 import { SongCard } from "../components/SongCard";
 import { Spinner } from "../components/Spinner";
 
 export const LibraryPage: React.FC = () => {
   const navigate = useNavigate();
   const { likedSongs, recentPlays, playlists, isLoading, createPlaylist } = useLibrary();
+  const { stats } = useCache();
 
-  const [activeTab, setActiveTab] = useState<"playlists" | "liked" | "recents">("playlists");
+  const [activeTab, setActiveTab] = useState<"playlists" | "liked" | "recents" | "offline">("playlists");
+  const [playlistFilter, setPlaylistFilter] = useState<"all" | "local" | "cloud">("all");
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
   const [playlistName, setPlaylistName] = useState("");
   const [playlistDesc, setPlaylistDesc] = useState("");
+
+  // Gather all songs that are cached locally on disk
+  const downloadedSongs = useMemo(() => {
+    const songMap = new Map();
+    // Check liked songs
+    for (const s of likedSongs) {
+      if (stats.cachedVideoIds.includes(s.videoId)) {
+        songMap.set(s.videoId, s);
+      }
+    }
+    // Check recent plays
+    for (const s of recentPlays) {
+      if (stats.cachedVideoIds.includes(s.videoId) && !songMap.has(s.videoId)) {
+        songMap.set(s.videoId, s);
+      }
+    }
+    // Check playlists
+    for (const pl of playlists) {
+      for (const s of pl.tracks) {
+        if (stats.cachedVideoIds.includes(s.videoId) && !songMap.has(s.videoId)) {
+          songMap.set(s.videoId, s);
+        }
+      }
+    }
+    return Array.from(songMap.values());
+  }, [likedSongs, recentPlays, playlists, stats.cachedVideoIds]);
+
+  const filteredPlaylists = useMemo(() => {
+    if (playlistFilter === "local") {
+      return playlists.filter((p) => !p.isCloud);
+    }
+    if (playlistFilter === "cloud") {
+      return playlists.filter((p) => Boolean(p.isCloud));
+    }
+    return playlists;
+  }, [playlists, playlistFilter]);
 
   const handleCreatePlaylist = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,6 +155,26 @@ export const LibraryPage: React.FC = () => {
           >
             Recently Played ({recentPlays.length})
           </button>
+          <button
+            onClick={() => setActiveTab("offline")}
+            style={{
+              background: activeTab === "offline" ? "rgba(16, 185, 129, 0.2)" : "transparent",
+              color: activeTab === "offline" ? "#10b981" : "var(--text-secondary)",
+              border: "none",
+              padding: "6px 16px",
+              borderRadius: "16px",
+              fontWeight: 600,
+              fontSize: "14px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <CheckCircle2 size={15} color={activeTab === "offline" ? "#10b981" : "currentColor"} />
+            <span>Downloaded ({stats.trackCount})</span>
+          </button>
         </div>
       </header>
 
@@ -127,15 +186,75 @@ export const LibraryPage: React.FC = () => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "1.25rem",
+              marginBottom: "1rem",
+              flexWrap: "wrap",
+              gap: "10px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
-              <ListMusic size={18} color="var(--accent-rose)" />
-              <h2 style={{ fontSize: "var(--font-size-md)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                Custom Playlists
-              </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
+                <ListMusic size={18} color="var(--accent-rose)" />
+                <h2 style={{ fontSize: "var(--font-size-md)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                  Playlists
+                </h2>
+              </div>
+
+              {/* Source Filters */}
+              <div style={{ display: "flex", gap: "4px", background: "rgba(255,255,255,0.05)", padding: "2px", borderRadius: "12px" }}>
+                <button
+                  onClick={() => setPlaylistFilter("all")}
+                  style={{
+                    border: "none",
+                    background: playlistFilter === "all" ? "rgba(255,255,255,0.12)" : "transparent",
+                    color: playlistFilter === "all" ? "#fff" : "var(--text-muted)",
+                    padding: "3px 10px",
+                    borderRadius: "10px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  All ({playlists.length})
+                </button>
+                <button
+                  onClick={() => setPlaylistFilter("local")}
+                  style={{
+                    border: "none",
+                    background: playlistFilter === "local" ? "rgba(255,255,255,0.12)" : "transparent",
+                    color: playlistFilter === "local" ? "#fff" : "var(--text-muted)",
+                    padding: "3px 10px",
+                    borderRadius: "10px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <User size={11} /> Local
+                </button>
+                <button
+                  onClick={() => setPlaylistFilter("cloud")}
+                  style={{
+                    border: "none",
+                    background: playlistFilter === "cloud" ? "rgba(16, 185, 129, 0.2)" : "transparent",
+                    color: playlistFilter === "cloud" ? "#10b981" : "var(--text-muted)",
+                    padding: "3px 10px",
+                    borderRadius: "10px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <Cloud size={11} /> Cloud
+                </button>
+              </div>
             </div>
+
             <button
               onClick={() => setIsCreatingPlaylist(true)}
               style={{
@@ -236,7 +355,7 @@ export const LibraryPage: React.FC = () => {
             </form>
           )}
 
-          {playlists.length === 0 ? (
+          {filteredPlaylists.length === 0 ? (
             <div
               style={{
                 padding: "3rem 1.5rem",
@@ -248,7 +367,7 @@ export const LibraryPage: React.FC = () => {
                 fontSize: "var(--font-size-sm)",
               }}
             >
-              No custom playlists yet. Click "+ New Playlist" to create one!
+              No playlists found in this view. Click "+ New Playlist" to create one!
             </div>
           ) : (
             <div
@@ -258,7 +377,7 @@ export const LibraryPage: React.FC = () => {
                 gap: "16px",
               }}
             >
-              {playlists.map((pl) => (
+              {filteredPlaylists.map((pl) => (
                 <div
                   key={pl.id}
                   onClick={() => navigate(`/playlist/${pl.id}`)}
@@ -271,6 +390,7 @@ export const LibraryPage: React.FC = () => {
                     display: "flex",
                     flexDirection: "column",
                     transition: "all 0.2s",
+                    position: "relative",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
@@ -293,6 +413,7 @@ export const LibraryPage: React.FC = () => {
                       overflow: "hidden",
                       marginBottom: "12px",
                       boxShadow: "0 6px 14px rgba(0,0,0,0.4)",
+                      position: "relative",
                     }}
                   >
                     {pl.tracks[0]?.thumbnailUrl ? (
@@ -304,6 +425,35 @@ export const LibraryPage: React.FC = () => {
                     ) : (
                       <Music size={36} color="rgba(255,255,255,0.3)" />
                     )}
+
+                    {/* Source Pill */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: "8px",
+                        left: "8px",
+                        background: pl.isCloud ? "rgba(16, 185, 129, 0.85)" : "rgba(0, 0, 0, 0.75)",
+                        backdropFilter: "blur(4px)",
+                        color: "#fff",
+                        padding: "2px 8px",
+                        borderRadius: "10px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      {pl.isCloud ? (
+                        <>
+                          <Cloud size={11} /> Synced
+                        </>
+                      ) : (
+                        <>
+                          <User size={11} /> Local
+                        </>
+                      )}
+                    </div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {pl.name}
@@ -366,6 +516,37 @@ export const LibraryPage: React.FC = () => {
             <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
               {recentPlays.map((song, index) => (
                 <SongCard key={`${song.videoId}-${index}`} song={song} index={index} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Downloaded Offline Tab */}
+      {activeTab === "offline" && (
+        <section>
+          {downloadedSongs.length === 0 ? (
+            <div
+              style={{
+                padding: "3rem 1.5rem",
+                borderRadius: "var(--radius-md)",
+                background: "var(--bg-surface)",
+                border: "1px dashed var(--border-subtle)",
+                textAlign: "center",
+                color: "var(--text-muted)",
+                fontSize: "var(--font-size-sm)",
+              }}
+            >
+              <HardDriveDownload size={32} style={{ marginBottom: "0.5rem", opacity: 0.5 }} />
+              <div>No downloaded tracks found in local cache.</div>
+              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "4px" }}>
+                Click the download icon next to any song to cache it for offline listening.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              {downloadedSongs.map((song, index) => (
+                <SongCard key={`offline-${song.videoId}-${index}`} song={song} index={index} />
               ))}
             </div>
           )}

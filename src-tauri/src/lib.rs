@@ -1,4 +1,6 @@
 pub mod audio;
+pub mod auth;
+pub mod cache;
 pub mod commands;
 pub mod library;
 #[cfg(all(target_os = "linux", feature = "mpris"))]
@@ -7,6 +9,7 @@ pub mod queue;
 pub mod search;
 pub mod settings;
 pub mod stream;
+pub mod sync;
 #[cfg(all(desktop, not(target_os = "android")))]
 pub mod tray;
 
@@ -77,7 +80,20 @@ pub fn run() {
             commands::remove_from_playlist,
             commands::reorder_playlist,
             commands::get_playlists,
-            commands::get_playlist
+            commands::get_playlist,
+            commands::get_active_profile,
+            commands::create_profile,
+            commands::switch_profile,
+            commands::delete_profile,
+            commands::list_profiles,
+            commands::link_youtube_account,
+            commands::disconnect_youtube_account,
+            commands::get_sync_status,
+            commands::sync_library,
+            commands::get_cache_stats,
+            commands::clear_cache,
+            commands::download_track_for_offline,
+            commands::is_track_cached
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

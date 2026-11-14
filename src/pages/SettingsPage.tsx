@@ -9,9 +9,18 @@ import {
   Loader2,
   Info,
   ExternalLink,
+  User,
+  Cloud,
+  RefreshCw,
+  HardDriveDownload,
+  Trash2,
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { usePlatform } from "../hooks/usePlatform";
+import { useAuth } from "../hooks/useAuth";
+import { useSync } from "../hooks/useSync";
+import { useCache } from "../hooks/useCache";
 
 interface AppSettings {
   cookie: string | null;
@@ -49,6 +58,10 @@ const fieldInputStyle: React.CSSProperties = {
 export const SettingsPage: React.FC = () => {
   const { showToast } = useToast();
   const { isMobile } = usePlatform();
+  const { activeProfile, openAuthModal, disconnectYoutubeAccount } = useAuth();
+  const { syncLibrary, isSyncing } = useSync();
+  const { stats, clearCache } = useCache();
+
   const [cookie, setCookie] = useState("");
   const [userAgent, setUserAgent] = useState("");
   const [poToken, setPoToken] = useState("");
@@ -163,6 +176,284 @@ export const SettingsPage: React.FC = () => {
           </p>
         </div>
       </header>
+
+      {/* Profile & Account Sync Section (Bitchord Model) */}
+      <section
+        style={{
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--radius-lg)",
+          padding: "1.5rem",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "1rem",
+            flexWrap: "wrap",
+            gap: "10px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <User size={18} style={{ color: "var(--accent)" }} />
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "var(--font-size-md)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              Account & Profile
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={openAuthModal}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "20px",
+              border: "1px solid var(--border-subtle)",
+              background: "var(--bg-surface-elevated)",
+              color: "var(--text-primary)",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Switch / Add Profile
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "1rem",
+            borderRadius: "var(--radius-md)",
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+            marginBottom: "1rem",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background:
+                  activeProfile?.avatarUrl ||
+                  "linear-gradient(135deg, #7c3aed, #ec4899)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.1rem",
+                fontWeight: 700,
+                color: "#ffffff",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+              }}
+            >
+              {(activeProfile?.displayName || "L").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "15px" }}>
+                {activeProfile?.displayName || "Local User"}
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: activeProfile?.linkedAccount
+                    ? "#10b981"
+                    : "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  marginTop: "2px",
+                }}
+              >
+                {activeProfile?.linkedAccount ? (
+                  <>
+                    <Cloud size={13} /> Linked with YouTube Music
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={13} /> Local Guest Mode (Offline Ready)
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {activeProfile?.linkedAccount ? (
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={() => void syncLibrary()}
+                disabled={isSyncing}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 12px",
+                  borderRadius: "16px",
+                  border: "none",
+                  background: "var(--accent-gradient)",
+                  color: "#fff",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: isSyncing ? "not-allowed" : "pointer",
+                }}
+              >
+                <RefreshCw
+                  size={13}
+                  style={{
+                    animation: isSyncing ? "spin 1s linear infinite" : "none",
+                  }}
+                />
+                <span>{isSyncing ? "Syncing..." : "Sync Now"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => void disconnectYoutubeAccount()}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "16px",
+                  border: "1px solid rgba(239, 68, 68, 0.4)",
+                  background: "rgba(239, 68, 68, 0.15)",
+                  color: "#f87171",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openAuthModal}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 12px",
+                borderRadius: "16px",
+                border: "none",
+                background: "var(--accent-gradient)",
+                color: "#fff",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <Cloud size={13} />
+              <span>Link Account</span>
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* Offline Storage & Disk Cache Section */}
+      <section
+        style={{
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--radius-lg)",
+          padding: "1.5rem",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "0.5rem",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <HardDriveDownload size={18} style={{ color: "var(--accent)" }} />
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "var(--font-size-md)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              Offline Audio Cache
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void clearCache()}
+            disabled={stats.trackCount === 0}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 14px",
+              borderRadius: "20px",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              background: "rgba(239, 68, 68, 0.1)",
+              color: stats.trackCount === 0 ? "var(--text-muted)" : "#f87171",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: stats.trackCount === 0 ? "not-allowed" : "pointer",
+              opacity: stats.trackCount === 0 ? 0.5 : 1,
+            }}
+          >
+            <Trash2 size={13} /> Clear Cache
+          </button>
+        </div>
+
+        <p
+          style={{
+            margin: "0 0 1rem",
+            color: "var(--text-secondary)",
+            fontSize: "var(--font-size-sm)",
+          }}
+        >
+          Downloaded or cached songs are stored on your local disk for instant, offline playback without media server buffering.
+        </p>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "12px",
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+            borderRadius: "var(--radius-md)",
+            padding: "1rem",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+              Cached Storage Used
+            </div>
+            <div style={{ fontSize: "18px", fontWeight: 700, marginTop: "4px" }}>
+              {(stats.totalBytes / (1024 * 1024)).toFixed(1)} MB
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+              Offline Tracks Available
+            </div>
+            <div style={{ fontSize: "18px", fontWeight: 700, marginTop: "4px" }}>
+              {stats.trackCount} {stats.trackCount === 1 ? "track" : "tracks"}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section
         style={{

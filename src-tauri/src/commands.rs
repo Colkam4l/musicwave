@@ -1,4 +1,6 @@
 use crate::audio::{self, RepeatMode};
+use crate::auth;
+use crate::cache;
 use crate::library::{self, UserPlaylist};
 use crate::queue;
 use crate::search::{
@@ -6,6 +8,7 @@ use crate::search::{
 };
 use crate::settings::{self, Settings};
 use crate::stream::{is_auth_error, is_cancelled_error};
+use crate::sync;
 use tauri::{AppHandle, Emitter};
 
 #[tauri::command]
@@ -310,4 +313,109 @@ pub async fn get_playlist(
     library::get_playlist(&app_handle, &playlist_id)
         .await
         .map_err(|e| e.to_string())
+}
+
+// Auth / Profile commands
+#[tauri::command]
+pub async fn get_active_profile(app_handle: AppHandle) -> Result<auth::UserProfile, String> {
+    auth::get_active_profile(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn create_profile(
+    display_name: String,
+    avatar_url: Option<String>,
+    app_handle: AppHandle,
+) -> Result<auth::UserProfile, String> {
+    auth::create_profile(&app_handle, display_name, avatar_url)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn switch_profile(
+    profile_id: String,
+    app_handle: AppHandle,
+) -> Result<auth::UserProfile, String> {
+    auth::switch_profile(&app_handle, &profile_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_profile(
+    profile_id: String,
+    app_handle: AppHandle,
+) -> Result<auth::UserProfile, String> {
+    auth::delete_profile(&app_handle, &profile_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_profiles(app_handle: AppHandle) -> Result<Vec<auth::UserProfile>, String> {
+    auth::list_profiles(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// Sync commands
+#[tauri::command]
+pub async fn link_youtube_account(
+    cookie: String,
+    app_handle: AppHandle,
+) -> Result<auth::UserProfile, String> {
+    sync::link_youtube_cookie(&app_handle, cookie)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn disconnect_youtube_account(
+    app_handle: AppHandle,
+) -> Result<auth::UserProfile, String> {
+    sync::disconnect_youtube_account(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_sync_status(app_handle: AppHandle) -> Result<sync::SyncStatus, String> {
+    Ok(sync::get_sync_status(&app_handle).await)
+}
+
+#[tauri::command]
+pub async fn sync_library(app_handle: AppHandle) -> Result<sync::SyncSummary, String> {
+    sync::sync_library(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// Cache / Offline commands
+#[tauri::command]
+pub async fn get_cache_stats(app_handle: AppHandle) -> Result<cache::CacheStats, String> {
+    cache::get_cache_stats(&app_handle).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn clear_cache(app_handle: AppHandle) -> Result<(), String> {
+    cache::clear_cache(&app_handle).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn download_track_for_offline(
+    video_id: String,
+    app_handle: AppHandle,
+) -> Result<String, String> {
+    let path = cache::download_track_for_offline(&app_handle, &video_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn is_track_cached(video_id: String, app_handle: AppHandle) -> Result<bool, String> {
+    Ok(cache::is_track_cached(&app_handle, &video_id))
 }

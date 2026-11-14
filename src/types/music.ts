@@ -54,4 +54,5 @@ export interface UserPlaylist {
   createdAt: number;
   updatedAt: number;
   tracks: Song[];
+  isCloud?: boolean;
 }

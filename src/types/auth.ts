@@ -31,3 +31,11 @@ export interface SyncSummary {
   timestamp: number;
 }
 
+export interface DetectedBrowser {
+  id: string;
+  name: string;
+  available: boolean;
+  hasSession: boolean;
+}
+
+

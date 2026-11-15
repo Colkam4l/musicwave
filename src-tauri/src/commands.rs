@@ -1,5 +1,6 @@
 use crate::audio::{self, RepeatMode};
 use crate::auth;
+use crate::browser_auth::{self, DetectedBrowser};
 use crate::cache;
 use crate::library::{self, UserPlaylist};
 use crate::queue;
@@ -448,3 +449,21 @@ pub async fn skip_to_queue_index(
         Ok(None)
     }
 }
+
+#[tauri::command]
+pub async fn detect_available_browsers() -> Result<Vec<DetectedBrowser>, String> {
+    tokio::task::spawn_blocking(browser_auth::detect_available_browsers)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn import_browser_cookies(
+    browser_id: String,
+    app_handle: AppHandle,
+) -> Result<auth::UserProfile, String> {
+    browser_auth::import_and_link_browser(&browser_id, &app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+

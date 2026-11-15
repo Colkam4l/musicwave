@@ -2,7 +2,7 @@ import { useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useAuthStore } from "../store/authStore";
-import { UserProfile } from "../types/auth";
+import { UserProfile, DetectedBrowser } from "../types/auth";
 
 export const useAuth = () => {
   const {
@@ -129,6 +129,29 @@ export const useAuth = () => {
     }
   };
 
+  const detectBrowsers = useCallback(async (): Promise<DetectedBrowser[]> => {
+    try {
+      return await invoke<DetectedBrowser[]>("detect_available_browsers");
+    } catch (err) {
+      console.error("[useAuth] Failed detecting browsers:", err);
+      return [];
+    }
+  }, []);
+
+  const importBrowserCookies = async (browserId: string): Promise<UserProfile> => {
+    setLoading(true);
+    try {
+      const updated = await invoke<UserProfile>("import_browser_cookies", {
+        browserId,
+      });
+      setActiveProfile(updated);
+      await loadProfiles();
+      return updated;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     activeProfile,
     profiles,
@@ -142,6 +165,8 @@ export const useAuth = () => {
     deleteProfile,
     linkYoutubeAccount,
     disconnectYoutubeAccount,
+    detectBrowsers,
+    importBrowserCookies,
     reloadProfiles: loadProfiles,
   };
 };

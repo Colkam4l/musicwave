@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod auth;
+pub mod browser_auth;
 pub mod cache;
 pub mod commands;
 pub mod library;
@@ -95,7 +96,9 @@ pub fn run() {
             commands::download_track_for_offline,
             commands::is_track_cached,
             commands::get_search_suggestions,
-            commands::skip_to_queue_index
+            commands::skip_to_queue_index,
+            commands::detect_available_browsers,
+            commands::import_browser_cookies
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

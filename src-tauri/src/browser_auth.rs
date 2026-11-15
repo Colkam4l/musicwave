@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -161,6 +163,114 @@ pub async fn import_and_link_browser(
 ) -> anyhow::Result<crate::auth::UserProfile> {
     let cookie = extract_browser_cookies(browser_id)?;
     crate::sync::link_youtube_cookie(app_handle, cookie).await
+}
+
+#[derive(Debug, Deserialize)]
+struct AuthCallbackPayload {
+    cookie: Option<String>,
+}
+
+/// Spawns an official Google Sign-In Webview window.
+/// Once the user completes sign-in and lands on music.youtube.com, the session is intercepted,
+/// saved to the user's profile, and the login window automatically closes.
+pub async fn start_google_login_window(app_handle: AppHandle) -> Result<(), String> {
+    if let Some(existing_window) = app_handle.get_webview_window("google_login") {
+        let _ = existing_window.set_focus();
+        return Ok(());
+    }
+
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .map_err(|e| format!("Failed to bind loopback listener: {e}"))?;
+    let port = listener
+        .local_addr()
+        .map_err(|e| format!("Failed to get local port: {e}"))?
+        .port();
+
+    let init_script = format!(
+        r#"
+(function() {{
+    console.log('[MusicWave Auth] Initializing Google sign-in watcher on port {port}...');
+    let reported = false;
+
+    function checkAndReport() {{
+        if (reported) return;
+        try {{
+            if (location.hostname.includes('youtube.com')) {{
+                var ck = document.cookie;
+                if (ck && (ck.indexOf('SAPISID') !== -1 || ck.indexOf('LOGIN_INFO') !== -1 || ck.indexOf('__Secure-3PAPISID') !== -1 || ck.indexOf('SID') !== -1)) {{
+                    reported = true;
+                    fetch('http://127.0.0.1:{port}/auth_callback', {{
+                        method: 'POST',
+                        headers: {{ 'Content-Type': 'application/json' }},
+                        body: JSON.stringify({{ cookie: ck }})
+                    }}).catch(function(err) {{
+                        console.error('[MusicWave Auth] Callback failed:', err);
+                    }});
+                }}
+            }}
+        }} catch(e) {{}}
+    }}
+
+    setInterval(checkAndReport, 1000);
+    window.addEventListener('load', checkAndReport);
+
+    var origFetch = window.fetch;
+    if (origFetch) {{
+        window.fetch = function() {{
+            checkAndReport();
+            return origFetch.apply(this, arguments);
+        }};
+    }}
+}})();
+"#
+    );
+
+    let login_url = "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com%2F";
+
+    let _window = tauri::WebviewWindowBuilder::new(
+        &app_handle,
+        "google_login",
+        tauri::WebviewUrl::External(login_url.parse().map_err(|e| format!("Invalid login URL: {e}"))?),
+    )
+    .title("Sign in with Google - YouTube Music")
+    .inner_size(520.0, 720.0)
+    .resizable(true)
+    .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+    .initialization_script(&init_script)
+    .build()
+    .map_err(|e| format!("Failed to open Google sign-in window: {e}"))?;
+
+    let app_clone = app_handle.clone();
+    tokio::spawn(async move {
+        let accept_fut = async {
+            if let Ok((mut socket, _)) = listener.accept().await {
+                let mut buf = vec![0u8; 16384];
+                if let Ok(n) = socket.read(&mut buf).await {
+                    let req_str = String::from_utf8_lossy(&buf[..n]);
+                    if let Some(body_start) = req_str.find("\r\n\r\n") {
+                        let body = &req_str[body_start + 4..];
+                        if let Ok(payload) = serde_json::from_str::<AuthCallbackPayload>(body) {
+                            if let Some(cookie) = payload.cookie {
+                                if !cookie.trim().is_empty() {
+                                    let resp = b"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><body style='font-family:sans-serif;text-align:center;padding:2rem;'><h2>Authenticated!</h2><p>Connecting to MusicWave...</p></body></html>";
+                                    let _ = socket.write_all(resp).await;
+                                    let _ = crate::sync::link_youtube_cookie(&app_clone, cookie).await;
+                                    if let Some(w) = app_clone.get_webview_window("google_login") {
+                                        let _ = w.close();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        let _ = tokio::time::timeout(std::time::Duration::from_secs(300), accept_fut).await;
+    });
+
+    Ok(())
 }
 
 #[cfg(test)]

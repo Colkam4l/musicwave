@@ -467,3 +467,8 @@ pub async fn import_browser_cookies(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn open_google_login_window(app_handle: AppHandle) -> Result<(), String> {
+    browser_auth::start_google_login_window(app_handle).await
+}
+

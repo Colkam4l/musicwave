@@ -152,6 +152,15 @@ export const useAuth = () => {
     }
   };
 
+  const openGoogleLoginWindow = async () => {
+    try {
+      await invoke("open_google_login_window");
+    } catch (err) {
+      console.error("[useAuth] Failed opening Google login window:", err);
+      throw err;
+    }
+  };
+
   return {
     activeProfile,
     profiles,
@@ -167,6 +176,7 @@ export const useAuth = () => {
     disconnectYoutubeAccount,
     detectBrowsers,
     importBrowserCookies,
+    openGoogleLoginWindow,
     reloadProfiles: loadProfiles,
   };
 };

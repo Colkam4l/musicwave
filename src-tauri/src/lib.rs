@@ -98,7 +98,8 @@ pub fn run() {
             commands::get_search_suggestions,
             commands::skip_to_queue_index,
             commands::detect_available_browsers,
-            commands::import_browser_cookies
+            commands::import_browser_cookies,
+            commands::open_google_login_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
